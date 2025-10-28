@@ -1,0 +1,57 @@
+{
+    "player":{
+        "max_health": 100,
+        "current_health": 100,
+        "damage": 10,
+        "speed": 5.0,
+        "fire_rate": 0.25,
+        "hitbox_scale": 0.7,
+        "hp_regen": 0,
+        "shield_duration": 3.0,
+        "points": 0
+    },
+
+    "enemies":{
+        "grunt": {
+            "max_health": 30,
+            "damage": 5,
+            "speed": 3.0,
+            "hitbox_scale": 0.6,
+            "spawn_rate": 1.5,
+            "reward": 5
+        },
+        "shooter": {
+            "max_health": 100,
+            "damage": 15,
+            "speed": 2.0,
+            "hitbox_scale": 0.9,
+            "spawn_rate": 0.5,
+            "reward": 15
+        },
+        "tank": {
+            "max_health": 50,
+            "damage": 20,
+            "speed": 2.5,
+            "hitbox_scale": 0.5,
+            "spawn_rate": 0.8,
+            "reward": 20
+        }
+    },
+
+    "waves":{
+        "spawn_interval": 2.0,
+        "spawn_increase_rate": 0.7,
+        "enemy_hp_scale": 1.05,
+        "enemy_speed_scale": 1.02,
+        "enemy_damage_scale": 1.05
+    },
+
+    "powerups": {
+    "health_restore": { "chance": 0.15, "effect": "+1 HP" },
+    "shield": { "chance": 0.05, "duration": 3 },
+    "rapid_fire": { "chance": 0.1, "multiplier": 0.5, "duration": 8 },
+    "spread_shot": { "chance": 0.05, "duration": 10 },
+    "score_boost": { "chance": 0.1, "multiplier": 2, "duration": 10 }
+  }
+
+}
