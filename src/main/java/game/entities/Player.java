@@ -2,11 +2,13 @@ package game.entities;
 
 
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Rectangle;
 
+import game.config.GameConfig;
 import game.controller.Controller;
 import game.core.Game;
+import game.entities.interfaces.EntityA;
+import game.entities.interfaces.EntityB;
 import game.graphics.Animation;
 import game.graphics.Textures;
 import game.physics.Physics;
@@ -15,19 +17,27 @@ public class Player extends GameObject implements EntityA {
 
     // right++; left-- (original) and up--; down++; (inverted)
 
+    //position
     private double velX = 0;
     private double velY = 0;
-    private Textures tex;
-    private Game game;
-    private Controller c;
 
+    private int max_health, current_health, hp_regen, points;
+    private double damage, speed, fire_rate, shield_duration;
+    
     Animation[] anim = new Animation[4];
 
-    public Player(double x, double y, Textures tex, Controller c, Game game){
-        super(x, y);
-        this.tex = tex;
-        this.c = c;
-        this.game = game;
+    public Player(double x, double y, Textures tex, Controller c, Game game, GameConfig config) {
+        super(x, y, tex, game, c);
+
+        GameConfig.PlayerConfig pConfig = config.player;
+        this.max_health = pConfig.max_health;
+        this.current_health = pConfig.current_health;
+        this.damage = pConfig.damage;
+        this.speed = pConfig.speed;
+        this.fire_rate = pConfig.fire_rate;
+        this.hp_regen = pConfig.hp_regen;
+        this.shield_duration = pConfig.shield_duration;
+        this.points = pConfig.points;
 
         anim[0] = new Animation(3,tex.player[0], tex.player[1]);
         anim[1] = new Animation(3,tex.player[2], tex.player[3]);
@@ -46,20 +56,24 @@ public class Player extends GameObject implements EntityA {
         if(y <= 0) y = 0;
         else if(y >= (Game.HEIGHT * Game.SCALE) - 32) y = (Game.HEIGHT * Game.SCALE) - 32;
 
+        // check collision with enemies
         for(int i = 0; i < game.eb.size(); i++){
             EntityB tempEnt = game.eb.get(i); // enemy
 
-            if(Physics.Collision(this, tempEnt)){ // if enemy and player crashed
+            if(Physics.Collision(this, tempEnt)){
                 c.removeEntity(tempEnt); // remove enemy
-                Game.HEALTH -= 10; // remove health
+
+                max_health -= 10; // reduce max health
                 game.setEnemy_killed(game.getEnemy_killed() + 1); // spawn numKilled + 1
-                if(Game.HEALTH <= 0){
+                
+                if(max_health <= 0){
                     Game.State = Game.STATE.MENU;
                 }
             }
 
         }
 
+        // animation movement
         if(getVelX() > 0) anim[2].runAnimation();
         else if (getVelX() < 0) anim[3].runAnimation();
         else if (getVelY() < 0) anim[1].runAnimation();

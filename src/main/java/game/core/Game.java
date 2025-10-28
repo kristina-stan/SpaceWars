@@ -17,24 +17,28 @@ import game.config.ConfigLoader;
 import game.config.GameConfig;
 import game.controller.Controller;
 import game.entities.Bullet;
-import game.entities.EntityA;
-import game.entities.EntityB;
 import game.entities.Player;
+import game.entities.interfaces.EntityA;
+import game.entities.interfaces.EntityB;
 import game.graphics.BufferedImageLoader;
 import game.graphics.Textures;
 import game.input.KeyInput;
 import game.input.MouseInput;
+import game.managers.EnemyManager;
+import game.managers.PlayerManager;
+import game.managers.SpawnManager;
+import game.managers.UpgradeManager;
 import game.ui.Menu;
 
 public class Game extends Canvas implements Runnable {
 
-    // WINDOW SETTINGS
+    //---------- WINDOW SETTINGS ----------
     public static final int WIDTH = 400;
     public static final int HEIGHT = WIDTH / 8 * 9;
     public static final int SCALE = 2;
     public final String TITLE = "2D Space Game";
 
-    // GAME SET
+    //---------- GAME SET ----------
     private boolean running = false;
     private Thread thread;
 
@@ -43,20 +47,26 @@ public class Game extends Canvas implements Runnable {
     private BufferedImage spriteSheet = null;
     private BufferedImage background = null;
 
-    // PLAYER SHOOTING CONTROL
+    //---------- PLAYER SHOOTING CONTROL ----------
     private boolean is_shootinng = false;
 
-    // ENEMY MANAGEMENT
+    //---------- ENEMY MANAGEMENT ----------
     private int enemy_count = 4; // how many to spawn
     private int enemy_killed = 0; // check how many lower types enemys to spawn
 
-    // GAME OBJECTS
-    //Config config = ;
+    //---------- GAME OBJECTS ----------
     private Player p;
     private Controller c;
     private Textures tex;
     private Menu menu;
+    private GameConfig config;
    // private MovingBackground mb;
+
+   // --------- MANAGERS ----------
+   private EnemyManager enemyManager;
+   private PlayerManager playerManager;
+   private SpawnManager spawnManager;
+   private UpgradeManager upgradeManager;
 
     public LinkedList<EntityA> ea; // bullet
     public LinkedList<EntityB> eb; // enemy
@@ -74,20 +84,25 @@ public class Game extends Canvas implements Runnable {
     public void init(){
         requestFocus();
 
-        // LOAD SPRITESHEETS
+        //---------- LOAD SPRITESHEETS ----------
         BufferedImageLoader loader = new BufferedImageLoader();
         spriteSheet = loader.loadSpriteSheet();
         background = loader.loadBackground();
 
-        // Load Game Configuration
-        GameConfig config = ConfigLoader.loadConfig();
-        System.out.println("Player max HP: " + config.player.max_health);
+        //---------- LOAD GAME CONFIGURATION ----------
+        config = ConfigLoader.loadConfig();
+        System.out.println("Player max HP: " + config.player.max_health); // TEST -> Example usage of loaded config
 
-        // INITIALISE OBJECTS
+        //---------- INITIALISE OBJECTS ----------
         tex = new Textures(this);
         c = new Controller(tex, this);
-        p = new Player(400, 700, tex, c, this);
+        p = new Player(400, 700, tex, c, this, config);
         menu = new Menu();
+
+        enemyManager = new EnemyManager(c, this, tex);
+        playerManager = new PlayerManager(p, this, tex);
+        spawnManager = new SpawnManager(this, enemyManager, config);
+        upgradeManager = new UpgradeManager(this, playerManager, config);
 
         ea = c.getEntityA();
         eb = c.getEntityB();
@@ -95,10 +110,12 @@ public class Game extends Canvas implements Runnable {
         this.addKeyListener((KeyListener) new KeyInput(this));
         this.addMouseListener((MouseListener) new MouseInput(this));
 
-        c.createEnemy(enemy_count);
+        enemyManager.spawnEnemies(5);
+        //c.createEnemy(enemy_count);
         //mb = new MovingBackground(background);
     }
 
+    //---------- THREAD MANAGEMENT ----------
     private synchronized void start(){ // start the Thread
         if(running)
             return;
@@ -119,6 +136,7 @@ public class Game extends Canvas implements Runnable {
         System.exit(1);
     }
 
+    // ---------- GAME LOOP ----------
     @Override
     public void run() { // the hearth of the game, the loop that runs the game
         init();
@@ -153,10 +171,11 @@ public class Game extends Canvas implements Runnable {
         stop();
     }
 
-    private void tick(){ // everything that updates
+    //---------- GAME LOGIC UPDATES each tick ----------
+    private void tick(){
         if(State == STATE.GAME) {
 
-            p.tick(); // every tick the player image is updated
+            p.tick();
             c.tick();
 
             if (enemy_killed >= enemy_count) {
@@ -178,10 +197,11 @@ public class Game extends Canvas implements Runnable {
 
         Graphics g = bs.getDrawGraphics();
 
-        /////// below is the items drown
+        //---------- DRAWING THE GAME ----------
         g.drawImage(background,0,0, null);
 
-        if(null != State) switch (State) {
+        if(null != State)
+        switch (State) {
             case GAME:
                 p.render(g);
                 c.render(g);
@@ -206,6 +226,7 @@ public class Game extends Canvas implements Runnable {
 
     }
 
+    //---------- INPUT HANDLING ----------
     public void keyPressed(KeyEvent e){
         int key = e.getKeyCode();
 
@@ -301,5 +322,8 @@ public class Game extends Canvas implements Runnable {
     }
     public void resetHealth(){
         this.HEALTH = 100 * 2;
+    }
+    public GameConfig getConfig() {
+        return config;
     }
 }

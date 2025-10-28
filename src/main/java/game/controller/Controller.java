@@ -4,9 +4,10 @@ package game.controller;
 import java.awt.Graphics;
 import java.util.LinkedList;
 import java.util.Random;
-import game.entities.EntityA;
-import game.entities.EntityB;
+
 import game.entities.Enemy;
+import game.entities.interfaces.EntityA;
+import game.entities.interfaces.EntityB;
 import game.core.Game;
 import game.graphics.Textures;
 
