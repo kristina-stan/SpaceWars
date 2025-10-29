@@ -23,7 +23,7 @@ public class GameConfig {
     public static class EnemyConfig {
         public int max_health;
         public int damage;
-        public double speed;
+        public int speed;
         public double hitbox_scale;
         public double spawn_rate;
         public int reward;

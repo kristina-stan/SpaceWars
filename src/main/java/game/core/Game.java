@@ -24,9 +24,8 @@ import game.graphics.BufferedImageLoader;
 import game.graphics.Textures;
 import game.input.KeyInput;
 import game.input.MouseInput;
-import game.managers.EnemyManager;
-import game.managers.PlayerManager;
-import game.managers.SpawnManager;
+import game.managers.EnemySpawner;
+import game.managers.PlayerUpgader;
 import game.managers.UpgradeManager;
 import game.ui.Menu;
 
@@ -63,9 +62,8 @@ public class Game extends Canvas implements Runnable {
    // private MovingBackground mb;
 
    // --------- MANAGERS ----------
-   private EnemyManager enemyManager;
-   private PlayerManager playerManager;
-   private SpawnManager spawnManager;
+   private EnemySpawner enemySpawner;
+   private PlayerUpgader playerManager;
    private UpgradeManager upgradeManager;
 
     public LinkedList<EntityA> ea; // bullet
@@ -99,9 +97,8 @@ public class Game extends Canvas implements Runnable {
         p = new Player(400, 700, tex, c, this, config);
         menu = new Menu();
 
-        enemyManager = new EnemyManager(c, this, tex);
-        playerManager = new PlayerManager(p, this, tex);
-        spawnManager = new SpawnManager(this, enemyManager, config);
+        enemySpawner = new EnemySpawner(this, tex, c);
+        playerManager = new PlayerUpgader(p, this, tex);
         upgradeManager = new UpgradeManager(this, playerManager, config);
 
         ea = c.getEntityA();
@@ -110,7 +107,7 @@ public class Game extends Canvas implements Runnable {
         this.addKeyListener((KeyListener) new KeyInput(this));
         this.addMouseListener((MouseListener) new MouseInput(this));
 
-        enemyManager.spawnEnemies(5);
+        //enemySpawner.spawnGruntWave();
         //c.createEnemy(enemy_count);
         //mb = new MovingBackground(background);
     }
@@ -171,6 +168,8 @@ public class Game extends Canvas implements Runnable {
         stop();
     }
 
+    private long lastWaveTime = System.currentTimeMillis();
+    private final long waveInterval = 5000; // 5 seconds between waves
     //---------- GAME LOGIC UPDATES each tick ----------
     private void tick(){
         if(State == STATE.GAME) {
@@ -178,11 +177,12 @@ public class Game extends Canvas implements Runnable {
             p.tick();
             c.tick();
 
-            if (enemy_killed >= enemy_count) {
-                enemy_count += 2;
-                enemy_killed = 0;
-                c.createEnemy(enemy_count);
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastWaveTime >= waveInterval){
+                lastWaveTime = currentTime;
+                enemySpawner.spawnGruntWave();
             }
+            
         }
     }
 

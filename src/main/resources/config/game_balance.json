@@ -15,7 +15,7 @@
         "grunt": {
             "max_health": 30,
             "damage": 5,
-            "speed": 3.0,
+            "speed": 3,
             "hitbox_scale": 0.6,
             "spawn_rate": 1.5,
             "reward": 5
@@ -23,7 +23,7 @@
         "shooter": {
             "max_health": 100,
             "damage": 15,
-            "speed": 2.0,
+            "speed": 2,
             "hitbox_scale": 0.9,
             "spawn_rate": 0.5,
             "reward": 15
@@ -31,7 +31,7 @@
         "tank": {
             "max_health": 50,
             "damage": 20,
-            "speed": 2.5,
+            "speed": 1,
             "hitbox_scale": 0.5,
             "spawn_rate": 0.8,
             "reward": 20

@@ -4,9 +4,9 @@ import game.core.Game;
 import game.entities.Player;
 import game.graphics.Textures;
 
-public class PlayerManager {
+public class PlayerUpgader {
 
-    public PlayerManager(Player p, Game game, Textures tex) {
+    public PlayerUpgader(Player p, Game game, Textures tex) {
         //TODO Auto-generated constructor stub
     }
     

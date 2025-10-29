@@ -9,6 +9,7 @@ import game.entities.Enemy;
 import game.entities.interfaces.EntityA;
 import game.entities.interfaces.EntityB;
 import game.core.Game;
+import game.entities.EnemyGrunt;
 import game.graphics.Textures;
 
 public class Controller {
@@ -27,12 +28,17 @@ public class Controller {
         this.game = game;
     }
 
-    public void createEnemy(int enemy_count){
+    public void createGruntEnemy(int enemy_count){
         for(int i = 0; i < enemy_count; i++){
-            addEntity(new Enemy(r.nextInt(Game.WIDTH * Game.SCALE), 0, tex, this, game));
+            addEntity(new EnemyGrunt(r.nextInt(Game.WIDTH * Game.SCALE), 0, tex, this, game));
         }
     }
 
+    //public void createShooterEnemy(int enemy_count){
+    //    for(int i = 0; i < enemy_count; i++){
+    //        addEntity(new EnemyShooter(r.nextInt(Game.WIDTH * Game.SCALE), 0, tex, this, game));
+    //   }
+    //}
 
     // Spawn moving obj
     public void tick(){

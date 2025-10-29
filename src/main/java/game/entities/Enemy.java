@@ -16,8 +16,8 @@ import game.physics.Physics;
 
 public abstract class Enemy extends GameObject implements EntityB {
 
-    protected int max_health, damage, reward;
-    protected double speed, spawn_rate;
+    protected int max_health, damage, speed, reward;
+    protected double spawn_rate;
     protected String type;
 
     Random r = new Random();
@@ -35,19 +35,12 @@ public abstract class Enemy extends GameObject implements EntityB {
         this.speed = eConfig.speed;
         this.spawn_rate = eConfig.spawn_rate;
 
-        anim = new Animation(10, tex.enemy[2], tex.enemy[3]);
+        anim = new Animation(this.speed, tex.enemy[2], tex.enemy[3]);
     }
 
     @Override
     public void tick(){ // if it moves any time in the game
         y += speed;
-
-        // when reached bottom, spawn from the top at random Y
-        if(y > (Game.HEIGHT * Game.SCALE)){
-            y = 0;
-            x = r.nextInt(Game.WIDTH * Game.SCALE);
-            speed = r.nextInt(3) + 1;
-        }
 
         for(int i = 0; i < game.ea.size(); i++){
             EntityA tempEnt = game.ea.get(i);
@@ -72,6 +65,7 @@ public abstract class Enemy extends GameObject implements EntityB {
     public Rectangle getBounds(){
         return new Rectangle((int) x, (int) y, 32, 32);
     }
+
     @Override
     public double getX() {
         return 0;
