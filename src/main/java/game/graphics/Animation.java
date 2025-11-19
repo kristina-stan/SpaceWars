@@ -5,7 +5,7 @@ import java.awt.image.BufferedImage;
 
 public class Animation {
 
-    private int speed;
+    private int speed = 10;
     private int frames;
     private int index = 0;
     private int count = 0;
@@ -27,142 +27,8 @@ public class Animation {
 
     private BufferedImage currentImg;
 
-    //14 frame animation
-    public Animation(int speed, BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4,BufferedImage img5, BufferedImage img6, BufferedImage img7, BufferedImage img8, BufferedImage img9, BufferedImage img10, BufferedImage img11,BufferedImage img12, BufferedImage img13, BufferedImage img14){
-        this.speed = speed;
-        this.img1 = img1;
-        this.img2 = img2;
-        this.img3 = img3;
-        this.img4 = img4;
-        this.img5 = img5;
-        this.img6 = img6;
-        this.img7 = img7;
-        this.img8 = img8;
-        this.img9 = img9;
-        this.img10 = img10;
-        this.img11 = img11;
-        this.img12 = img12;
-        this.img13 = img13;
-        this.img14 = img14;
-        frames = 14;
-    }
-    // 13 frames
-    public Animation(int speed, BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4,BufferedImage img5, BufferedImage img6, BufferedImage img7, BufferedImage img8, BufferedImage img9, BufferedImage img10, BufferedImage img11,BufferedImage img12, BufferedImage img13){
-        this.speed = speed;
-        this.img1 = img1;
-        this.img2 = img2;
-        this.img3 = img3;
-        this.img4 = img4;
-        this.img5 = img5;
-        this.img6 = img6;
-        this.img7 = img7;
-        this.img8 = img8;
-        this.img9 = img9;
-        this.img10 = img10;
-        this.img11 = img11;
-        this.img12 = img12;
-        this.img13 = img13;
-        frames = 13;
-    }
-    // 12 frames
-    public Animation(int speed, BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4,BufferedImage img5, BufferedImage img6, BufferedImage img7, BufferedImage img8, BufferedImage img9, BufferedImage img10, BufferedImage img11,BufferedImage img12){
-        this.speed = speed;
-        this.img1 = img1;
-        this.img2 = img2;
-        this.img3 = img3;
-        this.img4 = img4;
-        this.img5 = img5;
-        this.img6 = img6;
-        this.img7 = img7;
-        this.img8 = img8;
-        this.img9 = img9;
-        this.img10 = img10;
-        this.img11 = img11;
-        this.img12 = img12;
-        frames = 12;
-    }
-    // 11 frames
-    public Animation(int speed, BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4,BufferedImage img5, BufferedImage img6, BufferedImage img7, BufferedImage img8, BufferedImage img9, BufferedImage img10, BufferedImage img11){
-        this.speed = speed;
-        this.img1 = img1;
-        this.img2 = img2;
-        this.img3 = img3;
-        this.img4 = img4;
-        this.img5 = img5;
-        this.img6 = img6;
-        this.img7 = img7;
-        this.img8 = img8;
-        this.img9 = img9;
-        this.img10 = img10;
-        this.img11 = img11;
-        frames = 11;
-    }
-    // 10 frames
-    public Animation(int speed, BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4,BufferedImage img5, BufferedImage img6, BufferedImage img7, BufferedImage img8, BufferedImage img9, BufferedImage img10){
-        this.speed = speed;
-        this.img1 = img1;
-        this.img2 = img2;
-        this.img3 = img3;
-        this.img4 = img4;
-        this.img5 = img5;
-        this.img6 = img6;
-        this.img7 = img7;
-        this.img8 = img8;
-        this.img9 = img9;
-        this.img10 = img10;
-        frames = 10;
-    }
-    // 9 frames
-    public Animation(int speed, BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4,BufferedImage img5, BufferedImage img6, BufferedImage img7, BufferedImage img8, BufferedImage img9){
-        this.speed = speed;
-        this.img1 = img1;
-        this.img2 = img2;
-        this.img3 = img3;
-        this.img4 = img4;
-        this.img5 = img5;
-        this.img6 = img6;
-        this.img7 = img7;
-        this.img8 = img8;
-        this.img9 = img9;
-        frames = 9;
-    }
-    // 8 frames
-    public Animation(int speed, BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4,BufferedImage img5, BufferedImage img6, BufferedImage img7, BufferedImage img8){
-        this.img1 = img1;
-        this.img2 = img2;
-        this.img3 = img3;
-        this.img4 = img4;
-        this.img5 = img5;
-        this.img6 = img6;
-        this.img7 = img7;
-        this.img8 = img8;
-        frames = 8;
-    }
-    // 7 frames
-    public Animation(int speed, BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4,BufferedImage img5, BufferedImage img6, BufferedImage img7){
-        this.speed = speed;
-        this.img1 = img1;
-        this.img2 = img2;
-        this.img3 = img3;
-        this.img4 = img4;
-        this.img5 = img5;
-        this.img6 = img6;
-        this.img7 = img7;
-        frames = 7;
-    }
-    // 6 frames
-    public Animation(int speed, BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4,BufferedImage img5, BufferedImage img6){
-        this.speed = speed;
-        this.img1 = img1;
-        this.img2 = img2;
-        this.img3 = img3;
-        this.img4 = img4;
-        this.img5 = img5;
-        this.img6 = img6;
-        frames = 6;
-    }
     // 5 frames
-    public Animation(int speed, BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4,BufferedImage img5){
+    public Animation(BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4,BufferedImage img5){
         this.speed = speed;
         this.img1 = img1;
         this.img2 = img2;
@@ -172,7 +38,7 @@ public class Animation {
         frames = 5;
     }
     // 4 frames
-    public Animation(int speed, BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4){
+    public Animation(BufferedImage img1, BufferedImage img2, BufferedImage img3, BufferedImage img4){
         this.speed = speed;
         this.img1 = img1;
         this.img2 = img2;
@@ -181,7 +47,7 @@ public class Animation {
         frames = 4;
     }
     // 3 frames
-    public Animation(int speed, BufferedImage img1, BufferedImage img2, BufferedImage img3){
+    public Animation(BufferedImage img1, BufferedImage img2, BufferedImage img3){
         this.speed = speed;
         this.img1 = img1;
         this.img2 = img2;
@@ -189,14 +55,14 @@ public class Animation {
         frames = 3;
     }
     // 2 frames
-    public Animation(int speed, BufferedImage img1, BufferedImage img2){
+    public Animation(BufferedImage img1, BufferedImage img2){
         this.speed = speed;
         this.img1 = img1;
         this.img2 = img2;
         frames = 2;
     }
     // 1 frame
-    public Animation(int speed, BufferedImage img1){
+    public Animation(BufferedImage img1){
         this.speed = speed;
         this.img1 = img1;
         frames = 1;

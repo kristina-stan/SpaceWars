@@ -40,7 +40,7 @@ public class Menu {
         g.drawString("Quit", quitButton.x + 20, quitButton.y + 35);
         g2d.draw(quitButton);
     }
-    public void renderGame(Graphics g){
+    public void renderGame(Graphics g, String playerPoints){
         g2d = (Graphics2D) g;
 
         //HEALTH BAR
@@ -52,9 +52,11 @@ public class Menu {
         g.drawRect(5,8,200, 15);
 
         //QUIT BUTTON while in game
-        Font fnt0 = new Font("ariel", Font.BOLD, 12);
+        Font fnt0 = new Font("ariel", Font.BOLD, 15);
         g.setFont(fnt0);
-        g.drawString("Pause", (Game.WIDTH * Game.SCALE) - 50, 25);
+        g.drawString("Pause", (Game.WIDTH * Game.SCALE) - 75, 25);
+
+        g.drawString("Score: " + playerPoints, 10, 50);
 
     }
     public void renderPause(Graphics g) {

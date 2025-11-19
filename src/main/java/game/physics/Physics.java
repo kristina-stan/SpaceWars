@@ -1,7 +1,7 @@
 package game.physics;
 
-import game.entities.EntityA;
-import game.entities.EntityB;
+import game.entities.interfaces.EntityA;
+import game.entities.interfaces.EntityB;
 
 public class Physics {
 

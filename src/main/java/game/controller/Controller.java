@@ -4,10 +4,12 @@ package game.controller;
 import java.awt.Graphics;
 import java.util.LinkedList;
 import java.util.Random;
-import game.entities.EntityA;
-import game.entities.EntityB;
+
 import game.entities.Enemy;
+import game.entities.interfaces.EntityA;
+import game.entities.interfaces.EntityB;
 import game.core.Game;
+import game.entities.EnemyGrunt;
 import game.graphics.Textures;
 
 public class Controller {
@@ -26,26 +28,31 @@ public class Controller {
         this.game = game;
     }
 
-    public void createEnemy(int enemy_count){
+    public void createGruntEnemy(int enemy_count){
         for(int i = 0; i < enemy_count; i++){
-            addEntity(new Enemy(r.nextInt(Game.WIDTH * Game.SCALE), 0, tex, this, game));
+            addEntity(new EnemyGrunt(r.nextInt(Game.WIDTH * Game.SCALE), 0, tex, this, game));
         }
     }
 
+    //public void createShooterEnemy(int enemy_count){
+    //    for(int i = 0; i < enemy_count; i++){
+    //        addEntity(new EnemyShooter(r.nextInt(Game.WIDTH * Game.SCALE), 0, tex, this, game));
+    //   }
+    //}
 
     // Spawn moving obj
-    public void tick(){
+    public void tick(double deltaTime){
         //A CLASS
         for(int i = 0; i < ea.size(); i++){
             enta = ea.get(i);
 
-            enta.tick();
+            enta.tick(deltaTime);
         }
         //B CLASS
         for(int i = 0; i < eb.size(); i++){
             entb = eb.get(i);
 
-            entb.tick();
+            entb.tick(deltaTime);
         }
     }
 
