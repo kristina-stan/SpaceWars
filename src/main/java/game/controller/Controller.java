@@ -41,18 +41,18 @@ public class Controller {
     //}
 
     // Spawn moving obj
-    public void tick(){
+    public void tick(double deltaTime){
         //A CLASS
         for(int i = 0; i < ea.size(); i++){
             enta = ea.get(i);
 
-            enta.tick();
+            enta.tick(deltaTime);
         }
         //B CLASS
         for(int i = 0; i < eb.size(); i++){
             entb = eb.get(i);
 
-            entb.tick();
+            entb.tick(deltaTime);
         }
     }
 

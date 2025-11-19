@@ -39,14 +39,14 @@ public class Player extends GameObject implements EntityA {
         this.shield_duration = pConfig.shield_duration;
         this.points = pConfig.points;
 
-        anim[0] = new Animation(3,tex.player[0], tex.player[1]);
-        anim[1] = new Animation(3,tex.player[2], tex.player[3]);
-        anim[2] = new Animation(3,tex.player[4]);
-        anim[3] = new Animation(3,tex.player[5]);
+        anim[0] = new Animation(tex.player[0], tex.player[1]);
+        anim[1] = new Animation(tex.player[2], tex.player[3]);
+        anim[2] = new Animation(tex.player[4]);
+        anim[3] = new Animation(tex.player[5]);
     }
 
     @Override
-    public void tick(){
+    public void tick(double deltaTime){
         x += velX;
         y += velY;
 
@@ -124,5 +124,13 @@ public class Player extends GameObject implements EntityA {
     public double getVelY(){
         return this.velY;
     }
-
+    public void addPoints(int newPoints){
+        this.points += newPoints;
+    }
+    public int getPoints(){
+        return this.points;
+    }
+    public void setPoints(int points){
+        this.points = points;
+    }
 }

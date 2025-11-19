@@ -15,11 +15,11 @@ public class Bullet extends GameObject implements EntityA {
 
     public Bullet(double x, double y, Textures tex, Game game){
         super(x, y, tex, game);
-        anim = new Animation(3, tex.missle[0], tex.missle[1]);
+        anim = new Animation(tex.missle[0], tex.missle[1]);
     }
 
     @Override
-    public void tick(){
+    public void tick(double deltaTime){
         y -= 7;
 
         anim.runAnimation();

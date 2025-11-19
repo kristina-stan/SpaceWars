@@ -15,7 +15,7 @@
         "grunt": {
             "max_health": 30,
             "damage": 5,
-            "speed": 3,
+            "speed": 2.5,
             "hitbox_scale": 0.6,
             "spawn_rate": 1.5,
             "reward": 5

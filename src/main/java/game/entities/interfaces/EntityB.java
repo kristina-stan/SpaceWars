@@ -6,7 +6,7 @@ import java.awt.Rectangle;
 
 public interface EntityB {
 
-    public void tick();
+    public void tick(double deltaTime);
     public void render(Graphics g);
     public Rectangle getBounds();
 

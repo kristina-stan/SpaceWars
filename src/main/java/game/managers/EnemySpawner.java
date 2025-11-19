@@ -26,9 +26,9 @@ public class EnemySpawner {
         List<int[]> pattern = EnemyGrunt.getPattern(waveSize);
 
         int startX = random.nextInt(Game.WIDTH - 32);
-        int startY = - Game.HEIGHT;
-        int spacingX = 60;
-        int spacingY = 50;
+        int startY = -10;
+        int spacingX = 80;
+        int spacingY = 60;
 
         for (int row = 0; row < pattern.size(); row++){
             for (int col : pattern.get(row)) {
@@ -39,6 +39,13 @@ public class EnemySpawner {
             System.out.println("Spawned grunt wave with " + waveSize + " enemies.");
         }
 
+    }
+
+    public void spawnShooter() {
+        double x = random.nextInt(Game.WIDTH - 32);
+        double y = -10;
+        controller.addEntity(new EnemyGrunt(x, y, tex, controller, game));
+        System.out.println("Spawned shooter.");
     }
     
 }

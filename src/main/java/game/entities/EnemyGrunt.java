@@ -7,6 +7,7 @@ import java.util.Random;
 
 import game.controller.Controller;
 import game.core.Game;
+import game.graphics.Animation;
 import game.graphics.Textures;
 
 // EnemyGrunt is a basic enemy type with moderate speed and health, but does no damage
@@ -15,23 +16,15 @@ public class EnemyGrunt extends Enemy {
 
     public EnemyGrunt(double x, double y, Textures tex, Controller c, Game game) {
         super(x, y, tex, c, game, "grunt", game.getConfig());
+        super.anim = new Animation(tex.enemy[0], tex.enemy[1]);
     }
 
     @Override
-    public void tick() {
-        super.tick();
+    public void tick(double deltaTime){
+        super.tick(deltaTime);
+        super.y += speed;
         // maybe small side-to-side movement
         x += Math.sin(y / 20.0);
-    }
-
-    public void spawnEnemy() {
-
-        // 1. rand nuber of enemy group - 5 to 10
-
-        // 2. spawn at random x position at top of screen with 10 pixels space between enemies
-
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'spawnEnemy'");
     }
 
     private static final Map<Integer, List<int[]>> gruntPatterns = new HashMap<>();
