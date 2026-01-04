@@ -30,16 +30,10 @@ public class Controller {
 
     public void createGruntEnemy(int enemy_count){
         for(int i = 0; i < enemy_count; i++){
-            addEntity(new EnemyGrunt(r.nextInt(Game.WIDTH * Game.SCALE), 0, tex, this, game));
+            addEntity(new EnemyGrunt(r.nextInt(Game.VIRTUAL_WIDTH), 0, tex, this, game));
         }
     }
-
-    //public void createShooterEnemy(int enemy_count){
-    //    for(int i = 0; i < enemy_count; i++){
-    //        addEntity(new EnemyShooter(r.nextInt(Game.WIDTH * Game.SCALE), 0, tex, this, game));
-    //   }
-    //}
-
+    
     // Spawn moving obj
     public void tick(double deltaTime){
         //A CLASS

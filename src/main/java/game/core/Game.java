@@ -3,6 +3,7 @@ package game.core;
 import java.awt.Canvas;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseListener;
@@ -16,7 +17,6 @@ import javax.swing.WindowConstants;
 import game.config.ConfigLoader;
 import game.config.GameConfig;
 import game.controller.Controller;
-import game.entities.Bullet;
 import game.entities.Player;
 import game.entities.interfaces.EntityA;
 import game.entities.interfaces.EntityB;
@@ -32,9 +32,14 @@ import game.ui.Menu;
 public class Game extends Canvas implements Runnable {
 
     //---------- WINDOW SETTINGS ----------
-    public static final int WIDTH = 400;
-    public static final int HEIGHT = WIDTH / 8 * 9;
-    public static final int SCALE = 2;
+    public static final int VIRTUAL_WIDTH = 800; 
+    public static final int VIRTUAL_HEIGHT = 720;
+
+    public double currentScale = 1.0;
+    public int currentOffsetX = 0;   
+    public int currentOffsetY = 0;
+
+   // public static final int SCALE = 2;
     public final String TITLE = "2D Space Game";
 
     //---------- GAME SET ----------
@@ -45,12 +50,9 @@ public class Game extends Canvas implements Runnable {
     private static final double NS_PER_FRAME = 1_000_000_000.0 / TARGET_FPS;
 
     //buffers the whole window
-    private BufferedImage image = new BufferedImage(WIDTH*SCALE, HEIGHT*SCALE, BufferedImage.TYPE_INT_RGB);
+    private BufferedImage image = new BufferedImage(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, BufferedImage.TYPE_INT_RGB);
     private BufferedImage spriteSheet = null;
     private BufferedImage background = null;
-
-    //---------- PLAYER SHOOTING CONTROL ----------
-    private boolean is_shootinng = false;
 
     //---------- ENEMY MANAGEMENT ----------
     private int enemy_count = 4; // how many to spawn
@@ -62,6 +64,7 @@ public class Game extends Canvas implements Runnable {
     private Textures tex;
     private Menu menu;
     private GameConfig config;
+    //private PlayerInputs playerInputs;
    // private MovingBackground mb;
 
    // --------- MANAGERS ----------
@@ -72,13 +75,16 @@ public class Game extends Canvas implements Runnable {
     public LinkedList<EntityA> ea; // bullet
     public LinkedList<EntityB> eb; // enemy
 
-    public static int HEALTH = 100 * 2;
+    private long lastSurvivalPointTime = System.currentTimeMillis();
+    private final int SURVIVAL_POINT_INTERVAL_MS = 1000; // 1 second
+    private final int SURVIVAL_POINTS_PER_INTERVAL = 2;
 
     public static enum STATE{
         MENU,
         GAME,
         PAUSE,
-        HELP
+        HELP,
+        GAMEOVER
     };
     public static STATE State = STATE.MENU;
 
@@ -92,27 +98,24 @@ public class Game extends Canvas implements Runnable {
 
         //---------- LOAD GAME CONFIGURATION ----------
         config = ConfigLoader.loadConfig();
-        System.out.println("Player max HP: " + config.player.max_health); // TEST -> Example usage of loaded config
 
         //---------- INITIALISE OBJECTS ----------
         tex = new Textures(this);
         c = new Controller(tex, this);
-        p = new Player(400, 700, tex, c, this, config);
+        p = new Player(VIRTUAL_WIDTH/2, 0, tex, c, this, config);
         menu = new Menu();
 
+        //playerInputs = new PlayerInputs(p);
+        this.addKeyListener((KeyListener) new KeyInput(this));
+        this.addMouseListener((MouseListener) new MouseInput(this, menu));
+
         enemySpawner = new EnemySpawner(this, tex, c);
-        playerManager = new PlayerUpgader(p, this, tex);
-        upgradeManager = new UpgradeManager(this, playerManager, config);
+        //playerManager = new PlayerUpgader(p, this, tex);
+        //upgradeManager = new UpgradeManager(this, playerManager, config);
 
         ea = c.getEntityA();
         eb = c.getEntityB();
 
-        this.addKeyListener((KeyListener) new KeyInput(this));
-        this.addMouseListener((MouseListener) new MouseInput(this));
-
-        //enemySpawner.spawnGruntWave();
-        //c.createEnemy(enemy_count);
-        //mb = new MovingBackground(background);
     }
 
     //---------- THREAD MANAGEMENT ----------
@@ -151,11 +154,12 @@ public class Game extends Canvas implements Runnable {
 
         while (running){
             long now = System.nanoTime(); // again cause from 37line to 43 it takes time
-            deltaTime += (now - lastTime) / ns;
+            deltaTime = (now - lastTime) / ns;
             lastTime = now;
 
             tick(deltaTime);
             render();
+
             updates++;
             frames++;
 
@@ -190,60 +194,139 @@ public class Game extends Canvas implements Runnable {
             p.tick(deltaTime);
             c.tick(deltaTime);
 
-            long currentTime = System.currentTimeMillis();
-            if (currentTime - lastWaveTime >= waveInterval){
-                lastWaveTime = currentTime;
+            long currentWaveTime = System.currentTimeMillis();
+            if (currentWaveTime - lastWaveTime >= waveInterval){
+                lastWaveTime = currentWaveTime;
                 enemySpawner.spawnGruntWave();
             }
-            if (currentTime - lastShooterTime >= shooterInterval){
-            lastShooterTime = currentTime;
-            enemySpawner.spawnShooter();
+            if (currentWaveTime - lastShooterTime >= shooterInterval){
+                lastShooterTime = currentWaveTime;
+                enemySpawner.spawnShooter();
+            }
+
+            // Survival points over time
+            long currentPointTime = System.currentTimeMillis();
+            if (currentPointTime - lastSurvivalPointTime >= SURVIVAL_POINT_INTERVAL_MS) {
+            lastSurvivalPointTime = currentPointTime;
+            p.addPoints(SURVIVAL_POINTS_PER_INTERVAL);
+            }
         }
-            
-        }
+        
     }
 
-    void render(){ // everything that renders
+void render(){ // everything that renders
 
-        // this is the Canvas class; null if BufferStrategy is not created
-        BufferStrategy bs = this.getBufferStrategy();
-        if(bs == null){
-            createBufferStrategy(3); // images line buffered ready to project, it increases performance
-            return;
+    BufferStrategy bs = this.getBufferStrategy();
+    if(bs == null){
+        createBufferStrategy(3);
+        return;
+    }
+
+    Graphics g = bs.getDrawGraphics();
+    Graphics2D g2d = (Graphics2D) g; // Cast to Graphics2D for scaling
+    
+    // 1. Calculate the current actual size of the Canvas
+    int actualWidth = getWidth();
+    int actualHeight = getHeight();
+    
+    // 2. Determine the uniform scale factor to maintain the aspect ratio (letterboxing)
+    double scaleX = (double) actualWidth / VIRTUAL_WIDTH;
+    double scaleY = (double) actualHeight / VIRTUAL_HEIGHT;
+    
+    // 3. Calculate the scaled game area size
+    this.currentScale = Math.min(scaleX, scaleY);
+    int scaledGameWidth = (int) (VIRTUAL_WIDTH * currentScale);
+    int scaledGameHeight = (int) (VIRTUAL_HEIGHT * currentScale);
+    
+    // 4. Calculate the offset to center the game area
+    this.currentOffsetX = (actualWidth - scaledGameWidth) / 2;
+    this.currentOffsetY = (actualHeight - scaledGameHeight) / 2;
+
+    // 5. Clear the screen with black (for the letterbox bars)
+    g2d.setColor(java.awt.Color.BLACK);
+    g2d.fillRect(0, 0, actualWidth, actualHeight);
+    
+    // 6. Apply the transformation: Translate (move) and then Scale
+    g2d.translate(currentOffsetX, currentOffsetY);
+    g2d.scale(currentScale, currentScale);
+    g2d.drawImage(background,0,0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, null);
+
+    if(null != State)
+    switch (State) {
+        case GAME -> {
+            p.render(g2d); // Use g2d here
+            c.render(g2d); // Use g2d here
+
+            menu.renderGame(
+                g2d, String.valueOf(p.getPoints()),
+                getPlayer().getCurrent_health(),
+                getPlayer().getMax_health()
+            );
         }
-
-        Graphics g = bs.getDrawGraphics();
-
-        //---------- DRAWING THE GAME ----------
-        g.drawImage(background,0,0, null);
-
-        if(null != State)
-        switch (State) {
-            case GAME -> {
-                p.render(g);
-                c.render(g);
-                menu.renderGame(g, String.valueOf(p.getPoints()));
-            }
-            case PAUSE -> {
-                g.drawImage(background, 0, 0, getWidth(), getHeight(), this); // rend black screen
-                menu.renderPause(g);
-            }
-            case MENU -> {
-                resetGame();
-                g.drawImage(background, 0, 0, getWidth(), getHeight(), this); // rend black screen
-                menu.renderMenu(g);
-            }
-            case HELP -> g.drawImage(background, 0, 0, getWidth(), getHeight(), this); // rend black screen
-            default -> {
-            }
+        case PAUSE -> {
+            g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
+            menu.renderPause(g2d);
         }
-        //////// to here drown
-        g.dispose();
-        bs.show();
+        case MENU -> {
+            g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
+            menu.renderMenu(g2d);
+            resetGame();
+        }
+        case HELP -> {
+            g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
+        }
+        case GAMEOVER -> {
+            g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
+            menu.renderGameOver(g2d, p.getPoints());
+        }
+        default -> {}
+    }
+    
+    // Since everything is transformed, drawing stops here.
+    g.dispose();
+    bs.show();
+}
+
+    public static void main(String args[]) {
+        Game game = new Game();
+
+        //Dimenstion - initialises spesified width,height
+        game.setPreferredSize(new Dimension(VIRTUAL_WIDTH, VIRTUAL_HEIGHT));
+
+        JFrame frame = new JFrame(game.TITLE);
+        frame.add(game);
+
+       // frame.add(new MovingBackground(game.background));
+        frame.pack(); //size the components accordingly
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+        frame.setResizable(true); //u CANT resize it
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        game.start();
+    }
+
+    public void gameOver(){
+        State = STATE.GAMEOVER;
+    }
+
+    public void resetGame(){
+        p = new Player(400, 700, tex, c, this, config);
+
+        c.getEntityA().clear();
+        c.getEntityB().clear();
+
+        enemy_killed = 0;
+        lastWaveTime = System.currentTimeMillis();
+
+        //playerManager.resetUpgrades();
+        //upgradeManager.resetUpgrades();
 
     }
 
-    //---------- INPUT HANDLING ----------
+    private boolean isShooting = false;
+     //---------- INPUT HANDLING ----------
     public void keyPressed(KeyEvent e){
         int key = e.getKeyCode();
 
@@ -257,9 +340,10 @@ public class Game extends Canvas implements Runnable {
                     p.setVelY(3);
                 } else if (key == KeyEvent.VK_UP) {
                     p.setVelY(-3);
-                } else if (key == KeyEvent.VK_SPACE && !is_shootinng) {
-                    is_shootinng = true;
-                    c.addEntity(new Bullet(p.getX(), p.getY(), tex, this)); //creating/shooting a missle
+                } else if (key == KeyEvent.VK_SPACE && !isShooting) {
+                    isShooting = true;
+                    if (p.canShoot())
+                        p.shoot();
                 } else if (key == KeyEvent.VK_ESCAPE) {
                     State = STATE.PAUSE;
                 }
@@ -272,6 +356,14 @@ public class Game extends Canvas implements Runnable {
             case PAUSE -> {
                 if(key == KeyEvent.VK_ESCAPE) {
                     State = STATE.GAME;
+                }
+            }
+            case GAMEOVER -> {
+                if (key == KeyEvent.VK_ENTER) {
+                    State = STATE.GAME;
+                }
+                else if (key == KeyEvent.VK_ESCAPE) {
+                    State = STATE.MENU;
                 }
             }
             default -> {
@@ -287,44 +379,10 @@ public class Game extends Canvas implements Runnable {
             case KeyEvent.VK_LEFT -> p.setVelX(0);
             case KeyEvent.VK_DOWN -> p.setVelY(0);
             case KeyEvent.VK_UP -> p.setVelY(0);
-            case KeyEvent.VK_SPACE -> is_shootinng = false;
+            case KeyEvent.VK_SPACE -> isShooting = false;
             default -> {
             }
         }
-    }
-
-    public static void main(String args[]) {
-        Game game = new Game();
-
-        //Dimenstion - initialises spesified width,height
-        game.setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
-        game.setMaximumSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
-        game.setMinimumSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
-
-        JFrame frame = new JFrame(game.TITLE);
-        frame.add(game);
-       // frame.add(new MovingBackground(game.background));
-        frame.pack(); //size the components accordingly
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.setResizable(false); //u CANT resize it
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-
-        game.start();
-    }
-
-    public void resetGame(){
-        p = new Player(400, 700, tex, c, this, config);
-
-        c.getEntityA().clear();
-        c.getEntityB().clear();
-
-        enemy_killed = 0;
-        lastWaveTime = System.currentTimeMillis();
-
-        //playerManager.resetUpgrades();
-        //upgradeManager.resetUpgrades();
-
     }
 
     public BufferedImage getSpriteSheet(){
@@ -345,7 +403,8 @@ public class Game extends Canvas implements Runnable {
         this.enemy_killed = enemy_killed;
     }
     public void resetHealth(){
-        this.HEALTH = 100 * 2;
+        Player player = getPlayer();
+        player.setCurrent_health(player.getMax_health());
     }
     public GameConfig getConfig() {
         return config;

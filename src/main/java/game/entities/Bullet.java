@@ -11,16 +11,29 @@ import game.graphics.Textures;
 
 public class Bullet extends GameObject implements EntityA {
 
+    private boolean isFriendly = true;
     Animation anim;
 
-    public Bullet(double x, double y, Textures tex, Game game){
+    public Bullet(double x, double y ,Textures tex, Game game, boolean isFriendly){
         super(x, y, tex, game);
-        anim = new Animation(tex.missle[0], tex.missle[1]);
+        this.isFriendly = isFriendly;
+        if (isFriendly)
+            anim = new Animation(Textures.missle[0], Textures.missle[1]);
+        else
+            anim = new Animation(tex.rotate(Textures.missle[0]), tex.rotate(Textures.missle[1]));
+    }
+
+    @Override
+    public boolean getIsFriendly() {
+        return isFriendly;
     }
 
     @Override
     public void tick(double deltaTime){
-        y -= 7;
+        if(isFriendly)
+            y -= 7;
+        else
+            y += 7;
 
         anim.runAnimation();
     }

@@ -19,12 +19,13 @@ public abstract class Enemy extends GameObject implements EntityB {
     protected int max_health, damage, reward;
     protected double speed, spawn_rate;
     protected String type;
+    protected Animation anim;
 
     Random r = new Random();
-    Animation anim;
 
     public Enemy(double x, double y, Textures tex, Controller c, Game game,
-        String type, GameConfig config){
+        Animation anim, String type, GameConfig config){
+
         super(x, y, tex, game, c);
         this.type = type;
 
@@ -35,7 +36,7 @@ public abstract class Enemy extends GameObject implements EntityB {
         this.speed = eConfig.speed;
         this.spawn_rate = eConfig.spawn_rate;
 
-        //anim = new Animation(tex.enemy[2], tex.enemy[3]);
+        this.anim = anim;
     }
 
     @Override
@@ -44,17 +45,17 @@ public abstract class Enemy extends GameObject implements EntityB {
         for(int i = 0; i < game.ea.size(); i++){
             EntityA tempEnt = game.ea.get(i);
 
-            if(Physics.Collision(this, tempEnt)) { // enemy and bullet/player
+            if(Physics.Collision(this, tempEnt) && tempEnt.getIsFriendly()) { // enemy and bullet/player
                 c.removeEntity(tempEnt); // remove bullet on contact
                 c.removeEntity(this); // remove hit enemy
                 game.setEnemy_killed(game.getEnemy_killed() + 1); // spawn numKilled + 1
-                game.getPlayer().addPoints(this.reward);
+                game.getPlayer().addPoints(this.reward); // hit by player bullet
             }
         }
-        if(this.y > Game.HEIGHT * Game.SCALE) c.removeEntity(this);
+        if(this.y > Game.VIRTUAL_HEIGHT) c.removeEntity(this);
 
-        // collition
-        if (x >= 640 - 30) x = 640 - 30;
+        // collition with end off screen -> move to visible area
+        if (x >= Game.VIRTUAL_HEIGHT - 30) x = Game.VIRTUAL_HEIGHT - 30;
 
         anim.runAnimation();
     }
@@ -69,7 +70,7 @@ public abstract class Enemy extends GameObject implements EntityB {
 
     @Override
     public double getX() {
-        return 0;
+        return x;
     }
     @Override
     public double getY(){

@@ -68,7 +68,6 @@ public class Animation {
         frames = 1;
     }
 
-
     public void runAnimation(){
         index++;
         if(index > speed){
@@ -76,6 +75,7 @@ public class Animation {
             nextFrame();
         }
     }
+
     public void nextFrame(){
 
         switch (frames){

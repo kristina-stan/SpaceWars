@@ -14,10 +14,6 @@ public abstract class GameObject {
     public Game game;
     public Controller c;
 
-    GameObject(double x, double y) {
-        this.x = x;
-        this.y = y;
-    }
     GameObject(double x, double y, Textures tex, Game game, Controller c) {
         this.x = x;
         this.y = y;
