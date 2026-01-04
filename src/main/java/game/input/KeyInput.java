@@ -8,6 +8,7 @@ import game.core.Game;
 
 public class KeyInput extends KeyAdapter {
 
+    //PlayerInputs pi;
     Game game;
 
     public KeyInput(Game game){

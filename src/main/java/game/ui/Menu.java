@@ -14,51 +14,73 @@ public class Menu {
     private Graphics2D g2d;
 
     public Rectangle playButton = new Rectangle
-            (Game.WIDTH / 2 + 120, 150, 100, 50);
+            (Game.VIRTUAL_WIDTH / 2 + 120, 150, 100, 50);
     public Rectangle helpButton = new Rectangle
-            (Game.WIDTH / 2 + 120, 250, 100, 50);
+            (Game.VIRTUAL_WIDTH / 2 + 120, 250, 100, 50);
     public Rectangle quitButton = new Rectangle
-            (Game.WIDTH / 2 + 120, 350, 100, 50);
+            (Game.VIRTUAL_WIDTH / 2 + 120, 350, 100, 50);
 
-    /*public Rectangle backToMenuButton = new Rectangle
-            (230, 150, 200, 35);*/
+    private int centerTextX(Graphics g, String text) {
+        return (Game.VIRTUAL_WIDTH - g.getFontMetrics().stringWidth(text)) / 2;
+    }
 
     public void renderMenu(Graphics g){
-        g2d = (Graphics2D) g;
+    g2d = (Graphics2D) g;
 
-        Font fnt0 = new Font("arial", Font.BOLD, 50);
-        g.setFont(fnt0);
-        g.setColor(Color.white);
-        g.drawString("SPACE WARS", Game.WIDTH/2, 100);
+    Font fnt0 = new Font("arial", Font.BOLD, 50);
+    g.setFont(fnt0);
+    g.setColor(Color.white);
+    String title = "SPACE WARS";
+    g.drawString(title, centerTextX(g, title), 100);
 
-        Font fnt1 = new Font("arial", Font.BOLD, 30);
-        g.setFont(fnt1);
-        g.drawString("Play", playButton.x + 20, playButton.y + 35);
-        g2d.draw(playButton);
-        g.drawString("Help", helpButton.x + 20, helpButton.y + 35);
-        g2d.draw(helpButton);
-        g.drawString("Quit", quitButton.x + 20, quitButton.y + 35);
-        g2d.draw(quitButton);
+    Font fnt1 = new Font("arial", Font.BOLD, 30);
+    g.setFont(fnt1);
+
+    // Center Play button
+    String playTxt = "Play";
+    int playX = centerTextX(g, playTxt);
+    g.drawString(playTxt, playX, playButton.y + 35);
+    g2d.draw(new Rectangle(playX - 20, playButton.y, 
+            g.getFontMetrics().stringWidth(playTxt) + 40, 50));
+
+    // Center Help button
+    String helpTxt = "Help";
+    int helpX = centerTextX(g, helpTxt);
+    g.drawString(helpTxt, helpX, helpButton.y + 35);
+    g2d.draw(new Rectangle(helpX - 20, helpButton.y, 
+            g.getFontMetrics().stringWidth(helpTxt) + 40, 50));
+
+    // Center Quit button
+    String quitTxt = "Quit";
+    int quitX = centerTextX(g, quitTxt);
+    g.drawString(quitTxt, quitX, quitButton.y + 35);
+    g2d.draw(new Rectangle(quitX - 20, quitButton.y, 
+            g.getFontMetrics().stringWidth(quitTxt) + 40, 50));
     }
-    public void renderGame(Graphics g, String playerPoints){
+
+    public void renderGame(Graphics g, String playerPoints, int currentHealth, int maxHealth) {
         g2d = (Graphics2D) g;
 
         //HEALTH BAR
         g.setColor(Color.gray);
         g.fillRect(5,8,200, 15);
+
         g.setColor(Color.green);
-        g.fillRect(5,8,Game.HEALTH, 15);
+        int healthWidth = (int)(200.0 * currentHealth / maxHealth);
+        g.fillRect(5,8, healthWidth, 15);
+
         g.setColor(Color.white);
         g.drawRect(5,8,200, 15);
 
         //QUIT BUTTON while in game
         Font fnt0 = new Font("ariel", Font.BOLD, 15);
         g.setFont(fnt0);
-        g.drawString("Pause", (Game.WIDTH * Game.SCALE) - 75, 25);
+        g.drawString("Pause", (Game.VIRTUAL_WIDTH) - 75, 25);
 
         g.drawString("Score: " + playerPoints, 10, 50);
 
     }
+
     public void renderPause(Graphics g) {
         g2d = (Graphics2D) g;
 
@@ -68,15 +90,42 @@ public class Menu {
         Font fnt0 = new Font("Arial", Font.BOLD, 35);
         g.setFont(fnt0);
         g.setColor(Color.white);
-        g.drawString("GAME PAUSED", 200, 100);
-        // BACK TO MENU
+        String title = "GAME PAUSED";
+        g.drawString(title, centerTextX(g, title), 100);
+
         Font fnt1 = new Font("Arial", Font.TRUETYPE_FONT ,25);
         g.setColor(Color.white);
         g.setFont(fnt1);
-        g.drawString("Continue", 275, 175);
-        g.drawString("Back to menu", 250, 235);
-        g.drawString("Exit", 305, 295);
+        
+        String continueTxt = "Continue";
+        String backMenuTxt = "Back to menu";
+        String exitTxt = "Exit";
+        
+        g.drawString(continueTxt, centerTextX(g, continueTxt), 175);
+        g.drawString(backMenuTxt, centerTextX(g, backMenuTxt), 235);
+        g.drawString(exitTxt, centerTextX(g, exitTxt), 295);
 
+    }
+    public void renderGameOver(Graphics g, int playerPoints) {
+        g2d = (Graphics2D) g;
+
+        Font fnt0 = new Font("Arial", Font.BOLD, 35);
+        g.setFont(fnt0);
+        g.setColor(Color.white);
+        String gameOverTxt = "GAME OVER";
+        g.drawString(gameOverTxt, centerTextX(g, gameOverTxt), 100);
+
+        Font fnt1 = new Font("Arial", Font.TRUETYPE_FONT ,25);
+        g.setColor(Color.white);
+        g.setFont(fnt1);
+
+        String finalScoreTxt = "Final Score: " + playerPoints;
+        String backMenuTxt = "Back to menu";
+        String exitTxt = "Exit";
+
+        g.drawString(finalScoreTxt, centerTextX(g, finalScoreTxt), 175);
+        g.drawString(backMenuTxt, centerTextX(g, backMenuTxt), 235);
+        g.drawString(exitTxt, centerTextX(g, exitTxt), 295);
     }
     public void renderHelp(Graphics g){
         g2d = (Graphics2D) g;

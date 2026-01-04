@@ -1,90 +1,130 @@
 package game.input;
 
-
+import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
 import game.core.Game;
+import game.ui.Menu;
 
 public class MouseInput implements MouseListener {
 
     private Game game;
+    private Menu menu;
 
-    public MouseInput(Game game){
+    // MENU buttons
+    private Rectangle menuPlay;
+    private Rectangle menuHelp;
+    private Rectangle menuQuit;
+
+    // PAUSE buttons
+    private Rectangle pauseContinue;
+    private Rectangle pauseMenu;
+    private Rectangle pauseExit;
+
+    // GAME OVER buttons
+    private Rectangle goMenu;
+    private Rectangle goExit;
+
+    public MouseInput(Game game, Menu menu){
         this.game = game;
-    }
+        this.menu = menu;
 
-    @Override
-    public void mouseClicked(MouseEvent e) {
+        int center = Game.VIRTUAL_WIDTH / 2 - 100; // width = 200
 
+        menuPlay = new Rectangle(center, 150, 150, 50);
+        menuHelp = new Rectangle(center, 250, 150, 50);
+        menuQuit = new Rectangle(center, 350, 150, 50);
+
+        pauseContinue = new Rectangle(center, 175 - 30, 200, 40);
+        pauseMenu     = new Rectangle(center, 235 - 30, 200, 40);
+        pauseExit     = new Rectangle(center, 295 - 30, 200, 40);
+
+        goMenu = new Rectangle(center, 235 - 30, 200, 40);
+        goExit = new Rectangle(center, 295 - 30, 200, 40);
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
 
-        int mx = e.getX();
-        int my = e.getY();
+        // 1. Get the Raw Screen coordinates (0,0 is top-left of the window)
+        int rawX = e.getX();
+        int rawY = e.getY();
 
-        // BUTTONS IN MENU
-        if(Game.State == Game.STATE.MENU) {
-            if (mx >= Game.WIDTH / 2 + 120 && mx <= Game.WIDTH / 2 + 220) {
-                if (my >= 150 && my <= 200) {
-                    //pressed Play Button
-                    Game.State = Game.STATE.GAME;
-                    game.resetHealth();
-                    // have to reset enemies
-                } else if (my >= 250 && my <= 300) {
-                    //pressed Help Button
+        // 2. Convert to Game Coordinates
+        // Formula: (RawPosition - BlackBarSize) / ScaleFactor
+        int mx = (int) ((rawX - game.currentOffsetX) / game.currentScale);
+        int my = (int) ((rawY - game.currentOffsetY) / game.currentScale);
 
-                } else if (my >= 350 && my <= 400) {
-                    //pressed Quit Button
-                    System.exit(1);
-                }
+        // ==============================
+        // MENU
+        // ==============================
+        if (Game.State == Game.STATE.MENU) {
+
+            if (menuPlay.contains(mx, my)) {
+                Game.State = Game.STATE.GAME;
+                game.resetHealth();
+                return;
+            }
+            if (menuHelp.contains(mx, my)) {
+                Game.State = Game.STATE.HELP;
+                return;
+            }
+            if (menuQuit.contains(mx, my)) {
+                System.exit(0);
             }
         }
 
-        // BUTTON IN GAME
-        else if(Game.State == Game.STATE.GAME) {
-            if (mx >= (Game.WIDTH * Game.SCALE) - 50 && mx <= (Game.WIDTH * Game.SCALE) - 20) {
-                if(my >= 10 && my <= 30)
-                    Game.State = Game.STATE.PAUSE;
+        // ==============================
+        // IN-GAME → pause button
+        // ==============================
+        else if (Game.State == Game.STATE.GAME) {
+            int px1 = Game.VIRTUAL_WIDTH - 75;
+            int px2 = Game.VIRTUAL_WIDTH - 10;
+
+            if (mx >= px1 && mx <= px2 && my >= 10 && my <= 30) {
+                Game.State = Game.STATE.PAUSE;
             }
         }
 
-        // BUTTON IN PAUSE
+        // ==============================
+        // PAUSE SCREEN
+        // ==============================
         else if (Game.State == Game.STATE.PAUSE) {
-            if(my >= 150 && my <= 180) {
-                if(mx >= 270 && mx <= 410)
-                    Game.State = Game.STATE.GAME;
+
+            if (pauseContinue.contains(mx, my)) {
+                Game.State = Game.STATE.GAME;
+                return;
             }
-            if(my >= 210 && my <= 245) {
-                if (mx >= 250 && mx <= 450)
-                    Game.State = Game.STATE.MENU;
+
+            if (pauseMenu.contains(mx, my)) {
+                Game.State = Game.STATE.MENU;
+                return;
             }
-            if(my >= 270 && my <= 310) {
-                if (mx >= 305 && mx <= 350)
-                    System.exit(1);
+
+            if (pauseExit.contains(mx, my)) {
+                System.exit(0);
             }
         }
 
+        // ==============================
+        // GAME OVER
+        // ==============================
+        else if (Game.State == Game.STATE.GAMEOVER) {
+
+            if (goMenu.contains(mx, my)) {
+                Game.State = Game.STATE.MENU;
+                return;
+            }
+
+            if (goExit.contains(mx, my)) {
+                System.exit(0);
+            }
+        }
     }
 
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'mouseReleased'");
-    }
-
-    @Override
-    public void mouseEntered(MouseEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'mouseEntered'");
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'mouseExited'");
-    }
-
+    @Override public void mouseClicked(MouseEvent e) {}
+    @Override public void mouseReleased(MouseEvent e) {}
+    @Override public void mouseEntered(MouseEvent e) {}
+    @Override public void mouseExited(MouseEvent e) {}
 }

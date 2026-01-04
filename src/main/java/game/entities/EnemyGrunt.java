@@ -3,7 +3,6 @@ package game.entities;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import game.controller.Controller;
 import game.core.Game;
@@ -12,11 +11,15 @@ import game.graphics.Textures;
 
 // EnemyGrunt is a basic enemy type with moderate speed and health, but does no damage
 public class EnemyGrunt extends Enemy {
-    private Random random = new Random();
 
     public EnemyGrunt(double x, double y, Textures tex, Controller c, Game game) {
-        super(x, y, tex, c, game, "grunt", game.getConfig());
-        super.anim = new Animation(tex.enemy[0], tex.enemy[1]);
+        super(
+            x, y,
+            tex, c, game,
+            new Animation(tex.bEnemy[0], tex.bEnemy[1]),
+            "grunt",
+            game.getConfig()
+        );
     }
 
     @Override
