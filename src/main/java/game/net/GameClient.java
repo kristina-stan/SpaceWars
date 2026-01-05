@@ -1,13 +1,20 @@
 package game.net;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import game.net.dto.*;
-
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import game.net.dto.ConnectionMessage;
+import game.net.dto.EnemyDTO;
+import game.net.dto.EnemyUpdateMessage;
+import game.net.dto.GameStateMessage;
+import game.net.dto.PlayerUpdateMessage;
 
 public class GameClient {
     private Socket socket;
