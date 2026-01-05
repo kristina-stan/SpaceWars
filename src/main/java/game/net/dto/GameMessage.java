@@ -1,4 +1,4 @@
-package game.network.dto;
+package game.net.dto;
 
 public class GameMessage {
     private String type;

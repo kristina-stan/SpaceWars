@@ -1,8 +1,8 @@
-package game.network;
+package game.net;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import game.network.dto.*;
+import game.net.dto.*;
 
 import java.io.*;
 import java.net.Socket;
@@ -101,8 +101,8 @@ public class GameClient {
                 System.out.println("Unknown message type: " + type);
         }
     }
-    
-    public void sendPlayerUpdate(float x, float y, int health, int points) {
+
+    public void sendPlayerUpdate(double x, double y, int health, int points) {
         if (!connected) return;
         
         PlayerUpdateMessage msg = new PlayerUpdateMessage(x, y, health, points);

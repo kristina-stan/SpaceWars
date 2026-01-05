@@ -1,4 +1,4 @@
-package game.network;
+package game.net;
 
 import java.awt.*;
 

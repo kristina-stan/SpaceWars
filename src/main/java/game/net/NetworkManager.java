@@ -1,11 +1,11 @@
-package game.network;
+package game.net;
 
 import game.core.Game;
 import game.entities.Player;
 import game.entities.interfaces.EntityB;
-import game.network.dto.EnemyDTO;
-import game.network.dto.GameStateMessage;
-import game.network.dto.PlayerDTO;
+import game.net.dto.EnemyDTO;
+import game.net.dto.GameStateMessage;
+import game.net.dto.PlayerDTO;
 import game.graphics.Textures;
 
 import java.awt.*;
@@ -56,7 +56,6 @@ public class NetworkManager {
                     String.valueOf(System.identityHashCode(enemy)),
                     enemy.getX(),
                     enemy.getY(),
-                    enemy.getHealth(),
                     enemy.getClass().getSimpleName()
                 ));
             }

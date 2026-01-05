@@ -1,4 +1,4 @@
-package game.network.dto;
+package game.net.dto;
 
 import java.util.List;
 

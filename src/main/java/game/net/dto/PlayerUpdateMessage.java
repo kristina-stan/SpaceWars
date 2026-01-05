@@ -1,16 +1,16 @@
-package game.network.dto;
+package game.net.dto;
 
 public class PlayerUpdateMessage extends GameMessage {
-    private float x;
-    private float y;
+    private double x;
+    private double y;
     private int health;
     private int points;
     
     public PlayerUpdateMessage() {
         super("player_update");
     }
-    
-    public PlayerUpdateMessage(float x, float y, int health, int points) {
+
+    public PlayerUpdateMessage(double x, double y, int health, int points) {
         super("player_update");
         this.x = x;
         this.y = y;
@@ -18,11 +18,11 @@ public class PlayerUpdateMessage extends GameMessage {
         this.points = points;
     }
     
-    public float getX() { return x; }
-    public void setX(float x) { this.x = x; }
-    
-    public float getY() { return y; }
-    public void setY(float y) { this.y = y; }
+    public double getX() { return x; }
+    public void setX(double x) { this.x = x; }
+
+    public double getY() { return y; }
+    public void setY(double y) { this.y = y; }
     
     public int getHealth() { return health; }
     public void setHealth(int health) { this.health = health; }

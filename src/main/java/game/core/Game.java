@@ -130,18 +130,6 @@ public class Game extends Canvas implements Runnable {
         thread.start();
     }
 
-    private synchronized void stop(){ //synchronized deals with Threads
-        if(!running)
-            return;
-        running = false;
-        try {
-            thread.join();
-        }catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        System.exit(1);
-    }
-
     // ---------- GAME LOOP ----------
     @Override
     public void run() { // the hearth of the game, the loop that runs the game
