@@ -61,6 +61,8 @@ defmodule SpaceGame.GameState do
         new_state = %{state | player2: %{pid: player_pid, id: 2, x: 100, y: 0, health: 100}, game_started: true}
         send_to_player(state.player1.pid, {:game_start, 1})
         send_to_player(player_pid, {:game_start, 2})
+        # Immediately broadcast the current state so the new client sees enemies/player without delay
+        broadcast_state()
         {:reply, {:ok, 2}, new_state}
 
       true ->

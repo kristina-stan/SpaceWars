@@ -11,7 +11,8 @@ defmodule SpaceGame.ClientHandler do
     case SpaceGame.GameState.add_player(self()) do
       {:ok, player_id} ->
         :inet.setopts(socket, active: true)
-        send(self(), {:send, %{type: "connection", player_id: player_id}})
+        # Use camelCase key so Java client (Gson) maps it to `playerId`
+        send(self(), {:send, %{type: "connection", playerId: player_id}})
         Logger.info("Client connected as Player #{player_id}")
         {:ok, %{socket: socket, player_id: player_id}}
 

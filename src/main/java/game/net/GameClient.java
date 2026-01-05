@@ -85,7 +85,10 @@ public class GameClient {
 
             case "state_update":
                 GameStateMessage stateMsg = gson.fromJson(json, GameStateMessage.class);
-                stateQueue.offer(stateMsg.getState());
+                GameStateMessage.GameStateDTO s = stateMsg.getState();
+                int enemyCount = s.getEnemies() != null ? s.getEnemies().size() : 0;
+                System.out.println("Received state_update: enemies=" + enemyCount + ", p1=" + (s.getPlayer1() != null) + ", p2=" + (s.getPlayer2() != null));
+                stateQueue.offer(s);
                 break;
 
             case "player_disconnected":
