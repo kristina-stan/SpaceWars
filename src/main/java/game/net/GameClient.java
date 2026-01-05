@@ -10,6 +10,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import game.net.dto.BulletDTO;
+import game.net.dto.BulletUpdateMessage;
 import game.net.dto.ConnectionMessage;
 import game.net.dto.EnemyDTO;
 import game.net.dto.EnemyUpdateMessage;
@@ -91,8 +93,14 @@ public class GameClient {
                 break;
 
             case "state_update":
+                System.out.println("Received state_update JSON: " + json.substring(0, Math.min(300, json.length())));
                 GameStateMessage stateMsg = gson.fromJson(json, GameStateMessage.class);
-                stateQueue.offer(stateMsg.getState());
+                if (stateMsg != null && stateMsg.getState() != null) {
+                    System.out.println("State deserialized - Player1: " + stateMsg.getState().getPlayer1() + ", Player2: " + stateMsg.getState().getPlayer2() + ", Enemies: " + (stateMsg.getState().getEnemies() != null ? stateMsg.getState().getEnemies().size() : "null"));
+                    stateQueue.offer(stateMsg.getState());
+                } else {
+                    System.out.println("ERROR: StateMessage or State is null");
+                }
                 break;
 
             case "player_disconnected":
@@ -120,6 +128,13 @@ public class GameClient {
         if (!connected) return;
 
         EnemyUpdateMessage msg = new EnemyUpdateMessage(enemies);
+        sendMessage(msg);
+    }
+
+    public void sendBulletUpdate(java.util.List<BulletDTO> bullets) {
+        if (!connected) return;
+
+        BulletUpdateMessage msg = new BulletUpdateMessage(bullets);
         sendMessage(msg);
     }
 

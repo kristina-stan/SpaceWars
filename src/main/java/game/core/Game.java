@@ -61,8 +61,9 @@ public class Game extends Canvas implements Runnable {
 
     //---------- GAME OBJECTS ----------
     private Player p;
+    private Player remotePlayer;  // The other player in multiplayer
     private Controller c;
-    private Textures tex;
+    public Textures tex;
     private Menu menu;
     private GameConfig config;
     //private PlayerInputs playerInputs;
@@ -83,7 +84,8 @@ public class Game extends Canvas implements Runnable {
 
     public static enum STATE{
         MENU,
-        GAME,
+        GAME,           // Single-player game
+        GAME_MULTIPLAYER, // Multiplayer game with 2 players
         PAUSE,
         HELP,
         GAMEOVER,
@@ -109,6 +111,7 @@ public class Game extends Canvas implements Runnable {
         tex = new Textures(this);
         c = new Controller(tex, this);
         p = new Player(VIRTUAL_WIDTH/2, 0, tex, c, this, config);
+        remotePlayer = null;  // Will be created when multiplayer connects
         menu = new Menu();
 
         //playerInputs = new PlayerInputs(p);
@@ -182,10 +185,38 @@ public class Game extends Canvas implements Runnable {
     private long lastShooterTime = System.currentTimeMillis();
 
     //---------- GAME LOGIC UPDATES each tick ----------
-    void tick(double deltaTime){
+void tick(double deltaTime){
+        // Single-player game logic
         if(State == STATE.GAME) {
-
             p.tick(deltaTime);
+            c.tick(deltaTime);
+
+            long currentWaveTime = System.currentTimeMillis();
+
+            // Single-player: always spawn enemies
+            if (currentWaveTime - lastWaveTime >= waveInterval){
+                lastWaveTime = currentWaveTime;
+                enemySpawner.spawnGruntWave();
+            }
+            if (currentWaveTime - lastShooterTime >= shooterInterval){
+                lastShooterTime = currentWaveTime;
+                enemySpawner.spawnShooter();
+            }
+
+            // Survival points over time
+            long currentPointTime = System.currentTimeMillis();
+            if (currentPointTime - lastSurvivalPointTime >= SURVIVAL_POINT_INTERVAL_MS) {
+                lastSurvivalPointTime = currentPointTime;
+                p.addPoints(SURVIVAL_POINTS_PER_INTERVAL);
+            }
+        }
+        
+        // Multiplayer game logic
+        if(State == STATE.GAME_MULTIPLAYER) {
+            p.tick(deltaTime);
+            if (remotePlayer != null) {
+                remotePlayer.tick(deltaTime);
+            }
             c.tick(deltaTime);
 
             // Add network updates
@@ -195,13 +226,8 @@ public class Game extends Canvas implements Runnable {
 
             long currentWaveTime = System.currentTimeMillis();
 
-            // Only spawn enemies if single player OR host in multiplayer
-            // Clients receive enemies from server, so they don't spawn
-            boolean canSpawnEnemies = !networkManager.isMultiplayerMode() ||
-                    (networkManager.isMultiplayerMode() &&
-                            networkManager.isHosting());
-
-            if (canSpawnEnemies) {
+            // Only host spawns enemies in multiplayer
+            if (networkManager != null && networkManager.isHosting()) {
                 if (currentWaveTime - lastWaveTime >= waveInterval){
                     lastWaveTime = currentWaveTime;
                     enemySpawner.spawnGruntWave();
@@ -223,12 +249,11 @@ public class Game extends Canvas implements Runnable {
         // Check if multiplayer game should start
         if (State == STATE.WAITING_ROOM) {
             if (networkManager != null && networkManager.isGameReady()) {
-                State = STATE.GAME;
+                State = STATE.GAME_MULTIPLAYER;
             }
         }
     }
-
-    void render(){ // everything that renders
+void render(){ // everything that renders
         
         BufferStrategy bs = this.getBufferStrategy();
         if(bs == null){
@@ -256,20 +281,17 @@ public class Game extends Canvas implements Runnable {
         this.currentOffsetX = (actualWidth - scaledGameWidth) / 2;
         this.currentOffsetY = (actualHeight - scaledGameHeight) / 2;
 
-        // 5. Clear the screen with black (for the letterbox bars)
-        g2d.setColor(java.awt.Color.BLACK);
-        g2d.fillRect(0, 0, actualWidth, actualHeight);
-    
-            // 6. Apply the transformation: Translate (move) and then Scale
+        // 5. Apply the scaling and translation (This was missing/broken in your code)
         g2d.translate(currentOffsetX, currentOffsetY);
         g2d.scale(currentScale, currentScale);
-        g2d.drawImage(background,0,0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, null);
-
-        if(null != State)
+            
         switch (State) {
             case GAME -> {
-                p.render(g2d); // Use g2d here
-                c.render(g2d); // Use g2d here
+                p.render(g2d); // Render local player
+                if (remotePlayer != null) {
+                    remotePlayer.render(g2d); // Render remote player (different color)
+                }
+                c.render(g2d); // Render all entities (enemies and bullets from both players)
 
                 if (networkManager != null) {
                     networkManager.render(g2d);
@@ -293,7 +315,7 @@ public class Game extends Canvas implements Runnable {
             case MENU -> {
                 g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
                 menu.renderMenu(g2d);
-                resetGame();
+                // resetGame(); // <--- CAREFUL: Calling resetGame() inside render() will reset the game 60 times a second! Move this to where you change the state.
             }
             case HELP -> {
                 g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
@@ -303,7 +325,6 @@ public class Game extends Canvas implements Runnable {
                 g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
                 menu.renderGameOver(g2d, p.getPoints());
             }
-            // ADD THESE NEW CASES:
             case HOST -> {
                 g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
                 menu.renderHost(g2d);
@@ -315,6 +336,27 @@ public class Game extends Canvas implements Runnable {
             case WAITING_ROOM -> {
                 g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
                 menu.renderWaitingRoom(g2d, networkManager.isHosting(), networkManager.getServerIp());
+            }
+            case GAME_MULTIPLAYER -> {
+                // Multiplayer rendering with both players
+                p.render(g2d); // Render local player
+                if (remotePlayer != null) {
+                    remotePlayer.render(g2d); // Render remote player
+                }
+                c.render(g2d); // Render all entities (enemies and bullets from both players)
+
+                if (networkManager != null) {
+                    networkManager.render(g2d);
+                }
+
+                menu.renderGame(
+                        g2d,
+                        String.valueOf(p.getPoints()),
+                        getPlayer().getCurrent_health(),
+                        getPlayer().getMax_health(),
+                        true,
+                        networkManager.getPlayerCount()
+                );
             }
             default -> {}
         }
@@ -357,9 +399,10 @@ public class Game extends Canvas implements Runnable {
         enemy_killed = 0;
         lastWaveTime = System.currentTimeMillis();
 
+        // Removed the broken ", GAME_MULTIPLAYER" line here
+
         //playerManager.resetUpgrades();
         //upgradeManager.resetUpgrades();
-
     }
 
     private boolean isShooting = false;
@@ -505,5 +548,14 @@ public class Game extends Canvas implements Runnable {
     }
     public Player getPlayer(){
         return this.p;
+    }
+    public Player getRemotePlayer(){
+        return this.remotePlayer;
+    }
+    public void setRemotePlayer(Player remotePlayer){
+        this.remotePlayer = remotePlayer;
+    }
+    public Controller getController(){
+        return this.c;
     }
 }

@@ -3,12 +3,16 @@ package game.net;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import game.core.Game;
+import game.entities.Enemy;
 import game.entities.Player;
+import game.entities.interfaces.EntityA;
 import game.entities.interfaces.EntityB;
+import game.net.dto.BulletDTO;
 import game.net.dto.EnemyDTO;
 import game.net.dto.GameStateMessage;
 import game.net.dto.PlayerDTO;
@@ -16,11 +20,11 @@ import game.net.dto.PlayerDTO;
 public class NetworkManager {
     private GameClient client;
     private Game game;
-    private RemotePlayer remotePlayer;
     private boolean multiplayerMode;
     private boolean isHosting;
     private String serverIp;
     private Map<String, RemoteEnemy> remoteEnemies = new HashMap<>();
+    private LinkedList<BulletDTO> bulletCache = new LinkedList<>();
 
     public NetworkManager(Game game) {
         this.game = game;
@@ -79,6 +83,17 @@ public class NetworkManager {
             client.sendEnemyUpdate(enemyDTOs);
         }
 
+        // Both players send their bullets
+        bulletCache.clear();
+        for (EntityA bullet : game.ea) {
+            bulletCache.add(new BulletDTO(
+                String.valueOf(System.identityHashCode(bullet)),
+                bullet.getX(),
+                bullet.getY()
+            ));
+        }
+        client.sendBulletUpdate(bulletCache);
+
         // Receive and apply game state
         GameStateMessage.GameStateDTO state = client.getLatestState();
         if (state != null) {
@@ -87,7 +102,7 @@ public class NetworkManager {
     }
 
     private void updateFromState(GameStateMessage.GameStateDTO state) {
-        // Update remote player
+        // Create or update the remote player as an actual Player object
         PlayerDTO remoteDto = null;
         if (client.getMyPlayerId() == 1 && state.getPlayer2() != null) {
             remoteDto = state.getPlayer2();
@@ -96,42 +111,71 @@ public class NetworkManager {
         }
 
         if (remoteDto != null) {
-            if (remotePlayer == null) {
-                remotePlayer = new RemotePlayer(remoteDto.getX(), remoteDto.getY(), remoteDto.getId());
+            if (game.getRemotePlayer() == null) {
+                System.out.println("Creating new remote player: " + remoteDto.getId());
+                // Create a Player object for the remote player (positioned on the right side)
+                Player rp = new Player(remoteDto.getX(), remoteDto.getY(), game.tex, game.getController(), game, game.getConfig());
+                game.setRemotePlayer(rp);
             }
-            remotePlayer.setX(remoteDto.getX());
-            remotePlayer.setY(remoteDto.getY());
-            remotePlayer.setHealth(remoteDto.getHealth());
-            remotePlayer.setPoints(remoteDto.getPoints());
+            
+            // Update remote player position and health
+            Player rp = game.getRemotePlayer();
+            rp.x = remoteDto.getX();
+            rp.y = remoteDto.getY();
+            rp.setCurrent_health(remoteDto.getHealth());
+            System.out.println("Updated remote player at (" + remoteDto.getX() + ", " + remoteDto.getY() + ")");
         }
 
         // Update remote enemies from server
         if (state.getEnemies() != null) {
+            System.out.println("Updating " + state.getEnemies().size() + " remote enemies");
             updateRemoteEnemies(state.getEnemies());
+        } else {
+            System.out.println("No enemies in state update");
         }
     }
 
     private void updateRemoteEnemies(List<EnemyDTO> enemies) {
-        // Update existing and add new remote enemies
-        for (EnemyDTO enemyDto : enemies) {
-            RemoteEnemy remoteEnemy = remoteEnemies.get(enemyDto.getId());
-            if (remoteEnemy == null) {
-                remoteEnemy = new RemoteEnemy(enemyDto.getId(), enemyDto.getX(), enemyDto.getY(), enemyDto.getEnemyType());
-                remoteEnemies.put(enemyDto.getId(), remoteEnemy);
+        // Clear the controller's enemy list and add all enemies from server
+        // This ensures both players see the exact same enemies
+        if (!isHosting) {
+            System.out.println("Client: Syncing " + enemies.size() + " enemies from server");
+            
+            // Store which enemies we've seen in this update
+            Map<String, EnemyDTO> serverEnemies = new HashMap<>();
+            for (EnemyDTO enemy : enemies) {
+                serverEnemies.put(enemy.getId(), enemy);
             }
-            remoteEnemy.setX(enemyDto.getX());
-            remoteEnemy.setY(enemyDto.getY());
-        }
-
-        // Remove enemies that no longer exist on server
-        List<String> toRemove = new ArrayList<>();
-        for (String id : remoteEnemies.keySet()) {
-            boolean found = enemies.stream().anyMatch(e -> e.getId().equals(id));
-            if (!found) {
-                toRemove.add(id);
+            
+            // Remove enemies that no longer exist on server
+            List<EntityB> localEnemies = game.getController().getEntityB();
+            List<EntityB> toRemove = new ArrayList<>();
+            for (EntityB localEnemy : localEnemies) {
+                String id = String.valueOf(System.identityHashCode(localEnemy));
+                if (!serverEnemies.containsKey(id)) {
+                    toRemove.add(localEnemy);
+                }
             }
+            
+            // Remove dead enemies
+            for (EntityB enemy : toRemove) {
+                game.getController().removeEntity(enemy);
+                System.out.println("Removed enemy from local list");
+            }
+            
+            // Update positions of existing enemies
+            for (EntityB localEnemy : localEnemies) {
+                String id = String.valueOf(System.identityHashCode(localEnemy));
+                if (serverEnemies.containsKey(id)) {
+                    EnemyDTO dto = serverEnemies.get(id);
+                    // Direct assignment since x,y are public in GameObject
+                    ((Enemy) localEnemy).x = dto.getX();
+                    ((Enemy) localEnemy).y = dto.getY();
+                }
+            }
+        } else {
+            System.out.println("Host: Not syncing enemies - using local spawned enemies");
         }
-        toRemove.forEach(remoteEnemies::remove);
     }
 
     public void render(Graphics2D g) {
@@ -139,17 +183,8 @@ public class NetworkManager {
             return;
         }
 
-        // Render remote player
-        if (remotePlayer != null) {
-            remotePlayer.render(g);
-        }
-
-        // Render remote enemies (only if we're NOT hosting - host sees local enemies)
-        if (!isHosting) {
-            for (RemoteEnemy enemy : remoteEnemies.values()) {
-                enemy.render(g);
-            }
-        }
+        // Note: Remote player is now a real Player object and is rendered
+        // by the Game class in the main render loop, not here
     }
 
     public boolean isMultiplayerMode() {
@@ -170,18 +205,11 @@ public class NetworkManager {
             client.disconnect();
         }
         multiplayerMode = false;
-        remotePlayer = null;
+        // Remote player will be cleaned up when game resets
         remoteEnemies.clear();
         isHosting = false;
         serverIp = "";
     }
 
-    public RemotePlayer getRemotePlayer() {
-        return remotePlayer;
-    }
-
-    public Map<String, RemoteEnemy> getRemoteEnemies() {
-        return remoteEnemies;
-    }
 }
 

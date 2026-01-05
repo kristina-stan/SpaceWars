@@ -8,9 +8,15 @@ defmodule SpaceGame.ClientHandler do
 
   @impl true
   def init(socket) do
+    # Set socket options for length-prefixed messages
+    :inet.setopts(socket, [
+      {:packet, 4},
+      {:active, true},
+      :binary
+    ])
+
     case SpaceGame.GameState.add_player(self()) do
       {:ok, player_id} ->
-        :inet.setopts(socket, active: true)
         send(self(), {:send, %{type: "connection", player_id: player_id}})
         Logger.info("Client connected as Player #{player_id}")
         {:ok, %{socket: socket, player_id: player_id}}
@@ -50,6 +56,7 @@ defmodule SpaceGame.ClientHandler do
   @impl true
   def handle_info({:send, message}, state) do
     data = Jason.encode!(message)
+    Logger.info("Sending message to client #{state.player_id}: #{String.slice(data, 0..100)}")
     :gen_tcp.send(state.socket, data)
     {:noreply, state}
   end
@@ -70,11 +77,7 @@ defmodule SpaceGame.ClientHandler do
   def handle_info({:state_update, game_state}, state) do
     message = %{
       type: "state_update",
-      state: %{
-        player1: game_state.player1,
-        player2: game_state.player2,
-        enemies: game_state.enemies
-      }
+      state: game_state
     }
     send(self(), {:send, message})
     {:noreply, state}

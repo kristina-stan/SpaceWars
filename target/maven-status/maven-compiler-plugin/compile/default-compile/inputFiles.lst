@@ -24,6 +24,8 @@ E:\GameDevelopment\SpaceWars\src\main\java\game\input\PlayerInputs.java
 E:\GameDevelopment\SpaceWars\src\main\java\game\managers\EnemySpawner.java
 E:\GameDevelopment\SpaceWars\src\main\java\game\managers\PlayerUpgader.java
 E:\GameDevelopment\SpaceWars\src\main\java\game\managers\UpgradeManager.java
+E:\GameDevelopment\SpaceWars\src\main\java\game\net\dto\BulletDTO.java
+E:\GameDevelopment\SpaceWars\src\main\java\game\net\dto\BulletUpdateMessage.java
 E:\GameDevelopment\SpaceWars\src\main\java\game\net\dto\ConnectionMessage.java
 E:\GameDevelopment\SpaceWars\src\main\java\game\net\dto\EnemyDTO.java
 E:\GameDevelopment\SpaceWars\src\main\java\game\net\dto\EnemyUpdateMessage.java
