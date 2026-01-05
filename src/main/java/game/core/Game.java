@@ -86,7 +86,10 @@ public class Game extends Canvas implements Runnable {
         GAME,
         PAUSE,
         HELP,
-        GAMEOVER
+        GAMEOVER,
+        WAITING_ROOM,
+        HOST,
+        JOIN,
     };
     public static STATE State = STATE.MENU;
 
@@ -181,20 +184,23 @@ public class Game extends Canvas implements Runnable {
     //---------- GAME LOGIC UPDATES each tick ----------
     void tick(double deltaTime){
         if(State == STATE.GAME) {
+
             p.tick(deltaTime);
             c.tick(deltaTime);
-        
-            // Add network tick
-            networkManager.tick();
+
+            // Add network updates
+            if (networkManager != null) {
+                networkManager.tick();
+            }
 
             long currentWaveTime = System.currentTimeMillis();
-        
-            // Only Player 1 spawns enemies in multiplayer
-            boolean shouldSpawnEnemies = !networkManager.isMultiplayerMode() || 
-                                    (networkManager.isMultiplayerMode() && 
-                                     networkManager.isGameReady());
-        
-            if (shouldSpawnEnemies) {
+
+            // Only spawn enemies if single player OR both players connected in multiplayer
+            boolean canSpawnEnemies = !networkManager.isMultiplayerMode() ||
+                    (networkManager.isMultiplayerMode() &&
+                            networkManager.isGameReady());
+
+            if (canSpawnEnemies) {
                 if (currentWaveTime - lastWaveTime >= waveInterval){
                     lastWaveTime = currentWaveTime;
                     enemySpawner.spawnGruntWave();
@@ -210,6 +216,13 @@ public class Game extends Canvas implements Runnable {
             if (currentPointTime - lastSurvivalPointTime >= SURVIVAL_POINT_INTERVAL_MS) {
                 lastSurvivalPointTime = currentPointTime;
                 p.addPoints(SURVIVAL_POINTS_PER_INTERVAL);
+            }
+        }
+
+        // Check if multiplayer game should start
+        if (State == STATE.WAITING_ROOM) {
+            if (networkManager != null && networkManager.isGameReady()) {
+                State = STATE.GAME;
             }
         }
     }
@@ -257,11 +270,19 @@ public class Game extends Canvas implements Runnable {
                 p.render(g2d); // Use g2d here
                 c.render(g2d); // Use g2d here
 
-                networkManager.render(g2d);
+                if (networkManager != null) {
+                    networkManager.render(g2d);
+                }
+                boolean isMultiplayer = networkManager != null && networkManager.isMultiplayerMode();
+                int playerCount = isMultiplayer ? networkManager.getPlayerCount() : 1;
+
                 menu.renderGame(
-                    g2d, String.valueOf(p.getPoints()),
-                    getPlayer().getCurrent_health(),
-                    getPlayer().getMax_health()
+                        g2d,
+                        String.valueOf(p.getPoints()),
+                        getPlayer().getCurrent_health(),
+                        getPlayer().getMax_health(),
+                        isMultiplayer,
+                        playerCount
                 );
             }
             case PAUSE -> {
@@ -275,10 +296,24 @@ public class Game extends Canvas implements Runnable {
             }
             case HELP -> {
                 g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
+                menu.renderHelp(g2d);
             }
             case GAMEOVER -> {
                 g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
                 menu.renderGameOver(g2d, p.getPoints());
+            }
+            // ADD THESE NEW CASES:
+            case HOST -> {
+                g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
+                menu.renderHost(g2d);
+            }
+            case JOIN -> {
+                g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
+                menu.renderJoin(g2d);
+            }
+            case WAITING_ROOM -> {
+                g2d.drawImage(background, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, this);
+                menu.renderWaitingRoom(g2d, networkManager.isHosting(), networkManager.getServerIp());
             }
             default -> {}
         }
@@ -328,6 +363,7 @@ public class Game extends Canvas implements Runnable {
 
     private boolean isShooting = false;
      //---------- INPUT HANDLING ----------
+
     public void keyPressed(KeyEvent e){
         int key = e.getKeyCode();
 
@@ -364,6 +400,34 @@ public class Game extends Canvas implements Runnable {
                     State = STATE.GAME;
                 }
                 else if (key == KeyEvent.VK_ESCAPE) {
+                    // Disconnect from multiplayer if active
+                    if (networkManager != null && networkManager.isMultiplayerMode()) {
+                        networkManager.disconnect();
+                    }
+                    State = STATE.MENU;
+                }
+            }
+            // ADD THESE NEW CASES:
+            case HELP -> {
+                if (key == KeyEvent.VK_ESCAPE) {
+                    State = STATE.MENU;
+                }
+            }
+            case HOST -> {
+                if (key == KeyEvent.VK_ESCAPE) {
+                    State = STATE.MENU;
+                }
+            }
+            case JOIN -> {
+                if (key == KeyEvent.VK_ESCAPE) {
+                    State = STATE.MENU;
+                }
+            }
+            case WAITING_ROOM -> {
+                if (key == KeyEvent.VK_ESCAPE) {
+                    if (networkManager != null) {
+                        networkManager.disconnect();
+                    }
                     State = STATE.MENU;
                 }
             }
@@ -371,6 +435,7 @@ public class Game extends Canvas implements Runnable {
             }
         }
     }
+
     public void keyReleased(KeyEvent e) {
         int key = e.getKeyCode();
 
@@ -394,16 +459,16 @@ public class Game extends Canvas implements Runnable {
         return spriteSheet;
     }
 
-    private synchronized void stop(){ 
+    private synchronized void stop(){
         if(!running)
             return;
         running = false;
-    
-        // Disconnect network
+
+        // ADD: Disconnect network
         if (networkManager != null) {
             networkManager.disconnect();
         }
-    
+
         try {
             thread.join();
         }catch (InterruptedException e) {
