@@ -11,7 +11,12 @@ defmodule SpaceGame.ClientHandler do
     case SpaceGame.GameState.add_player(self()) do
       {:ok, player_id} ->
         :inet.setopts(socket, active: true)
+<<<<<<< Updated upstream
         send(self(), {:send, %{type: "connection", player_id: player_id}})
+=======
+        # Use camelCase key so Java client maps it to `playerId`
+        send(self(), {:send, %{type: "connection", playerId: player_id}})
+>>>>>>> Stashed changes
         Logger.info("Client connected as Player #{player_id}")
         {:ok, %{socket: socket, player_id: player_id}}
 
@@ -70,10 +75,27 @@ defmodule SpaceGame.ClientHandler do
   def handle_info({:state_update, game_state}, state) do
     message = %{
       type: "state_update",
+      timestamp: System.system_time(:millisecond),
       state: %{
+<<<<<<< Updated upstream
         player1: game_state.player1,
         player2: game_state.player2,
         enemies: game_state.enemies
+=======
+        player1: player_to_dto.(game_state.player1),
+        player2: player_to_dto.(game_state.player2),
+        enemies: Enum.map(game_state.enemies || [], fn e ->
+          # Ensure enemy entries include vx/vy keys (defaults to 0) and proper keys for the client
+          %{
+            id: e["id"],
+            x: e["x"],
+            y: e["y"],
+            enemyType: e["enemyType"],
+            vx: Map.get(e, "vx", 0),
+            vy: Map.get(e, "vy", 0)
+          }
+        end)
+>>>>>>> Stashed changes
       }
     }
     send(self(), {:send, message})

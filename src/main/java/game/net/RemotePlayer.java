@@ -6,20 +6,84 @@ import java.awt.*;
 public class RemotePlayer {
     private double x;
     private double y;
+<<<<<<< Updated upstream
+=======
+    private double targetX;
+    private double targetY;
+    private double lastServerX;
+    private double lastServerY;
+    private long lastServerTime;
+    private double vx;
+    private double vy;
+    private final double extrapolationSeconds = 0.18; // predict 180ms ahead
+>>>>>>> Stashed changes
     private int health;
     private int points;
     private int playerId;
     private static final int WIDTH = 32;
     private static final int HEIGHT = 32;
+<<<<<<< Updated upstream
+=======
+    private final double smoothing = 18.0; // higher = snappier
+>>>>>>> Stashed changes
 
     public RemotePlayer(double x, double y, int playerId) {
         this.x = x;
         this.y = y;
+<<<<<<< Updated upstream
+=======
+        this.targetX = x;
+        this.targetY = y;
+        this.lastServerX = x;
+        this.lastServerY = y;
+        this.lastServerTime = 0;
+        this.vx = 0;
+        this.vy = 0;
+>>>>>>> Stashed changes
         this.health = 100;
         this.points = 0;
         this.playerId = playerId;
     }
 
+<<<<<<< Updated upstream
+=======
+    // Call this every tick to smooth movement (deltaTime in seconds)
+    public void update(double deltaTime) {
+        double t = Math.min(1.0, smoothing * deltaTime);
+        this.x += (targetX - this.x) * t;
+        this.y += (targetY - this.y) * t;
+    }
+
+    // Basic direct set (keeps existing behavior)
+    public void setTarget(double tx, double ty) {
+        this.targetX = tx;
+        this.targetY = ty;
+    }
+
+    // Use server-received position + compute velocity for simple extrapolation
+    public void setTargetFromServer(double tx, double ty, long serverRecvTimeMs) {
+        if (lastServerTime > 0) {
+            double dt = (serverRecvTimeMs - lastServerTime) / 1000.0;
+            if (dt > 0) {
+                this.vx = (tx - lastServerX) / dt;
+                this.vy = (ty - lastServerY) / dt;
+            }
+        }
+        // Predict slightly ahead to compensate for latency
+        this.targetX = tx + vx * extrapolationSeconds;
+        this.targetY = ty + vy * extrapolationSeconds;
+
+        this.lastServerX = tx;
+        this.lastServerY = ty;
+        this.lastServerTime = serverRecvTimeMs;
+    }
+
+    public double getVx() { return vx; }
+    public double getVy() { return vy; }
+    public double getTargetX() { return targetX; }
+    public double getTargetY() { return targetY; }
+
+>>>>>>> Stashed changes
     public void render(Graphics2D g) {
         // Draw remote player ship (different color from local player)
         g.setColor(new Color(0, 200, 255)); // Cyan/Blue
