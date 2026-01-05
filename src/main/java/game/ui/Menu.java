@@ -25,37 +25,37 @@ public class Menu {
     }
 
     public void renderMenu(Graphics g){
-    g2d = (Graphics2D) g;
+        g2d = (Graphics2D) g;
 
-    Font fnt0 = new Font("arial", Font.BOLD, 50);
-    g.setFont(fnt0);
-    g.setColor(Color.white);
-    String title = "SPACE WARS";
-    g.drawString(title, centerTextX(g, title), 100);
+        Font fnt0 = new Font("arial", Font.BOLD, 50);
+        g.setFont(fnt0);
+        g.setColor(Color.white);
+        String title = "SPACE WARS";
+        g.drawString(title, centerTextX(g, title), 100);
 
-    Font fnt1 = new Font("arial", Font.BOLD, 30);
-    g.setFont(fnt1);
+        Font fnt1 = new Font("arial", Font.BOLD, 30);
+        g.setFont(fnt1);
 
-    // Center Play button
-    String playTxt = "Play";
-    int playX = centerTextX(g, playTxt);
-    g.drawString(playTxt, playX, playButton.y + 35);
-    g2d.draw(new Rectangle(playX - 20, playButton.y, 
-            g.getFontMetrics().stringWidth(playTxt) + 40, 50));
+        // Center Play button
+        String playTxt = "Play";
+        int playX = centerTextX(g, playTxt);
+        g.drawString(playTxt, playX, playButton.y + 35);
+        g2d.draw(new Rectangle(playX - 20, playButton.y,
+                g.getFontMetrics().stringWidth(playTxt) + 40, 50));
 
-    // Center Help button
-    String helpTxt = "Help";
-    int helpX = centerTextX(g, helpTxt);
-    g.drawString(helpTxt, helpX, helpButton.y + 35);
-    g2d.draw(new Rectangle(helpX - 20, helpButton.y, 
-            g.getFontMetrics().stringWidth(helpTxt) + 40, 50));
+        // Center Help button
+        String helpTxt = "Help";
+        int helpX = centerTextX(g, helpTxt);
+        g.drawString(helpTxt, helpX, helpButton.y + 35);
+        g2d.draw(new Rectangle(helpX - 20, helpButton.y,
+                g.getFontMetrics().stringWidth(helpTxt) + 40, 50));
 
-    // Center Quit button
-    String quitTxt = "Quit";
-    int quitX = centerTextX(g, quitTxt);
-    g.drawString(quitTxt, quitX, quitButton.y + 35);
-    g2d.draw(new Rectangle(quitX - 20, quitButton.y, 
-            g.getFontMetrics().stringWidth(quitTxt) + 40, 50));
+        // Center Quit button
+        String quitTxt = "Quit";
+        int quitX = centerTextX(g, quitTxt);
+        g.drawString(quitTxt, quitX, quitButton.y + 35);
+        g2d.draw(new Rectangle(quitX - 20, quitButton.y,
+                g.getFontMetrics().stringWidth(quitTxt) + 40, 50));
     }
 
     public void renderGame(Graphics g, String playerPoints, int currentHealth, int maxHealth) {
@@ -96,11 +96,11 @@ public class Menu {
         Font fnt1 = new Font("Arial", Font.TRUETYPE_FONT ,25);
         g.setColor(Color.white);
         g.setFont(fnt1);
-        
+
         String continueTxt = "Continue";
         String backMenuTxt = "Back to menu";
         String exitTxt = "Exit";
-        
+
         g.drawString(continueTxt, centerTextX(g, continueTxt), 175);
         g.drawString(backMenuTxt, centerTextX(g, backMenuTxt), 235);
         g.drawString(exitTxt, centerTextX(g, exitTxt), 295);
