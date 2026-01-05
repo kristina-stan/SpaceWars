@@ -68,7 +68,15 @@ defmodule SpaceGame.ClientHandler do
 
   @impl true
   def handle_info({:state_update, game_state}, state) do
-    send(self(), {:send, %{type: "state_update", state: game_state}})
+    message = %{
+      type: "state_update",
+      state: %{
+        player1: game_state.player1,
+        player2: game_state.player2,
+        enemies: game_state.enemies
+      }
+    }
+    send(self(), {:send, message})
     {:noreply, state}
   end
 

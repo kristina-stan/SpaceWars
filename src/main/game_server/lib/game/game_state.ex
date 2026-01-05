@@ -43,6 +43,8 @@ defmodule SpaceGame.GameState do
       game_started: false
     }
     Logger.info("GameState initialized")
+    # Start periodic broadcast - every 50ms (20 times per second)
+    :timer.send_interval(50, :broadcast_state)
     {:ok, state}
   end
 
@@ -109,6 +111,21 @@ defmodule SpaceGame.GameState do
 
   @impl true
   def handle_cast(:broadcast_state, state) do
+    if state.game_started do
+      game_state = %{
+        player1: state.player1,
+        player2: state.player2,
+        enemies: state.enemies
+      }
+
+      if state.player1, do: send_to_player(state.player1.pid, {:state_update, game_state})
+      if state.player2, do: send_to_player(state.player2.pid, {:state_update, game_state})
+    end
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info(:broadcast_state, state) do
     if state.game_started do
       game_state = %{
         player1: state.player1,

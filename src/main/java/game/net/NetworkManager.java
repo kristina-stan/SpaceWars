@@ -1,15 +1,17 @@
 package game.net;
 
+import java.awt.Graphics2D;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import game.core.Game;
 import game.entities.Player;
 import game.entities.interfaces.EntityB;
 import game.net.dto.EnemyDTO;
 import game.net.dto.GameStateMessage;
 import game.net.dto.PlayerDTO;
-
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class NetworkManager {
     private GameClient client;
@@ -18,6 +20,7 @@ public class NetworkManager {
     private boolean multiplayerMode;
     private boolean isHosting;
     private String serverIp;
+    private Map<String, RemoteEnemy> remoteEnemies = new HashMap<>();
 
     public NetworkManager(Game game) {
         this.game = game;
@@ -101,14 +104,52 @@ public class NetworkManager {
             remotePlayer.setHealth(remoteDto.getHealth());
             remotePlayer.setPoints(remoteDto.getPoints());
         }
+
+        // Update remote enemies from server
+        if (state.getEnemies() != null) {
+            updateRemoteEnemies(state.getEnemies());
+        }
+    }
+
+    private void updateRemoteEnemies(List<EnemyDTO> enemies) {
+        // Update existing and add new remote enemies
+        for (EnemyDTO enemyDto : enemies) {
+            RemoteEnemy remoteEnemy = remoteEnemies.get(enemyDto.getId());
+            if (remoteEnemy == null) {
+                remoteEnemy = new RemoteEnemy(enemyDto.getId(), enemyDto.getX(), enemyDto.getY(), enemyDto.getEnemyType());
+                remoteEnemies.put(enemyDto.getId(), remoteEnemy);
+            }
+            remoteEnemy.setX(enemyDto.getX());
+            remoteEnemy.setY(enemyDto.getY());
+        }
+
+        // Remove enemies that no longer exist on server
+        List<String> toRemove = new ArrayList<>();
+        for (String id : remoteEnemies.keySet()) {
+            boolean found = enemies.stream().anyMatch(e -> e.getId().equals(id));
+            if (!found) {
+                toRemove.add(id);
+            }
+        }
+        toRemove.forEach(remoteEnemies::remove);
     }
 
     public void render(Graphics2D g) {
-        if (!multiplayerMode || remotePlayer == null) {
+        if (!multiplayerMode) {
             return;
         }
 
-        remotePlayer.render(g);
+        // Render remote player
+        if (remotePlayer != null) {
+            remotePlayer.render(g);
+        }
+
+        // Render remote enemies (only if we're NOT hosting - host sees local enemies)
+        if (!isHosting) {
+            for (RemoteEnemy enemy : remoteEnemies.values()) {
+                enemy.render(g);
+            }
+        }
     }
 
     public boolean isMultiplayerMode() {
@@ -130,6 +171,7 @@ public class NetworkManager {
         }
         multiplayerMode = false;
         remotePlayer = null;
+        remoteEnemies.clear();
         isHosting = false;
         serverIp = "";
     }
@@ -137,4 +179,9 @@ public class NetworkManager {
     public RemotePlayer getRemotePlayer() {
         return remotePlayer;
     }
+
+    public Map<String, RemoteEnemy> getRemoteEnemies() {
+        return remoteEnemies;
+    }
 }
+

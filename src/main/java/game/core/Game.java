@@ -195,10 +195,11 @@ public class Game extends Canvas implements Runnable {
 
             long currentWaveTime = System.currentTimeMillis();
 
-            // Only spawn enemies if single player OR both players connected in multiplayer
+            // Only spawn enemies if single player OR host in multiplayer
+            // Clients receive enemies from server, so they don't spawn
             boolean canSpawnEnemies = !networkManager.isMultiplayerMode() ||
                     (networkManager.isMultiplayerMode() &&
-                            networkManager.isGameReady());
+                            networkManager.isHosting());
 
             if (canSpawnEnemies) {
                 if (currentWaveTime - lastWaveTime >= waveInterval){

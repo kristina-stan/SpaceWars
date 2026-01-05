@@ -12,6 +12,7 @@ game\controller\Controller.class
 game\config\GameConfig$PowerupConfig.class
 game\net\dto\GameMessage.class
 game\systems\CollisionSystem.class
+game\net\RemoteEnemy.class
 game\config\GameConfig.class
 game\config\GameConfig$EnemyConfig.class
 game\entities\Player.class

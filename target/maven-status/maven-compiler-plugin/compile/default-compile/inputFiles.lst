@@ -33,6 +33,7 @@ E:\GameDevelopment\SpaceWars\src\main\java\game\net\dto\PlayerDTO.java
 E:\GameDevelopment\SpaceWars\src\main\java\game\net\dto\PlayerUpdateMessage.java
 E:\GameDevelopment\SpaceWars\src\main\java\game\net\GameClient.java
 E:\GameDevelopment\SpaceWars\src\main\java\game\net\NetworkManager.java
+E:\GameDevelopment\SpaceWars\src\main\java\game\net\RemoteEnemy.java
 E:\GameDevelopment\SpaceWars\src\main\java\game\net\RemotePlayer.java
 E:\GameDevelopment\SpaceWars\src\main\java\game\physics\Physics.java
 E:\GameDevelopment\SpaceWars\src\main\java\game\systems\CollisionSystem.java
