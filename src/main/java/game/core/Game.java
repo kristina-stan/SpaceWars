@@ -116,6 +116,9 @@ public class Game extends Canvas implements Runnable {
         this.addMouseListener((MouseListener) new MouseInput(this, menu));
 
         enemySpawner = new EnemySpawner(this, tex, c);
+
+        // expose textures for networked remote entities
+        // (provides a getter below)
         //playerManager = new PlayerUpgader(p, this, tex);
         //upgradeManager = new UpgradeManager(this, playerManager, config);
 
@@ -191,6 +194,8 @@ public class Game extends Canvas implements Runnable {
             // Add network updates
             if (networkManager != null) {
                 networkManager.tick();
+                // Update remote entities smoothing
+                networkManager.update(deltaTime);
             }
 
             long currentWaveTime = System.currentTimeMillis();
@@ -458,6 +463,11 @@ public class Game extends Canvas implements Runnable {
 
     public BufferedImage getSpriteSheet(){
         return spriteSheet;
+    }
+
+    // Provide access to textures for remote entities
+    public Textures getTextures() {
+        return tex;
     }
 
     private synchronized void stop(){

@@ -55,6 +55,9 @@ public class GameClient {
                 input.readFully(data);
                 String json = new String(data);
 
+                // Debug: show raw incoming JSON
+                System.out.println("RAW RECEIVED: " + json);
+
                 handleMessage(json);
 
             } catch (IOException e) {
@@ -73,6 +76,7 @@ public class GameClient {
 
         switch (type) {
             case "connection":
+                System.out.println("Connection message raw: " + json);
                 ConnectionMessage connMsg = gson.fromJson(json, ConnectionMessage.class);
                 myPlayerId = connMsg.getPlayerId();
                 System.out.println("Assigned Player ID: " + myPlayerId);

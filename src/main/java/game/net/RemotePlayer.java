@@ -6,18 +6,35 @@ import java.awt.*;
 public class RemotePlayer {
     private double x;
     private double y;
+    private double targetX;
+    private double targetY;
     private int health;
     private int points;
     private int playerId;
     private static final int WIDTH = 32;
     private static final int HEIGHT = 32;
+    private final double smoothing = 8.0; // higher = snappier
 
     public RemotePlayer(double x, double y, int playerId) {
         this.x = x;
         this.y = y;
+        this.targetX = x;
+        this.targetY = y;
         this.health = 100;
         this.points = 0;
         this.playerId = playerId;
+    }
+
+    // Call this every tick to smooth movement (deltaTime in seconds)
+    public void update(double deltaTime) {
+        double t = Math.min(1.0, smoothing * deltaTime);
+        this.x += (targetX - this.x) * t;
+        this.y += (targetY - this.y) * t;
+    }
+
+    public void setTarget(double tx, double ty) {
+        this.targetX = tx;
+        this.targetY = ty;
     }
 
     public void render(Graphics2D g) {

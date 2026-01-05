@@ -86,7 +86,20 @@ public class NetworkManager {
         }
     }
 
+    // Called once per game tick to smooth/interpolate remote entities
+    public void update(double deltaTime) {
+        if (remotePlayer != null) remotePlayer.update(deltaTime);
+        for (RemoteEnemy e : remoteEnemies.values()) {
+            e.update(deltaTime);
+        }
+    }
+
     private void updateFromState(GameStateMessage.GameStateDTO state) {
+        // Debug: show who we think we are and what arrived
+        if (client != null) {
+            System.out.println("NetworkManager.updateFromState: myPlayerId=" + client.getMyPlayerId() + ", hasPlayer1=" + (state.getPlayer1() != null) + ", hasPlayer2=" + (state.getPlayer2() != null));
+        }
+
         // Update remote player
         PlayerDTO remoteDto = null;
         if (client.getMyPlayerId() == 1 && state.getPlayer2() != null) {
@@ -96,17 +109,16 @@ public class NetworkManager {
         }
 
         if (remoteDto != null) {
+            System.out.println("NetworkManager: received remote player DTO -> id=" + remoteDto.getId() + ", x=" + remoteDto.getX() + ", y=" + remoteDto.getY());
             if (remotePlayer == null) {
+                System.out.println("NetworkManager: creating RemotePlayer for id=" + remoteDto.getId());
                 remotePlayer = new RemotePlayer(remoteDto.getX(), remoteDto.getY(), remoteDto.getId());
+            } else {
+                // Debug update
+                System.out.println("NetworkManager: updating RemotePlayer target to x=" + remoteDto.getX() + " y=" + remoteDto.getY());
             }
-            remotePlayer.setX(remoteDto.getX());
-            remotePlayer.setY(remoteDto.getY());
-            remotePlayer.setHealth(remoteDto.getHealth());
-            remotePlayer.setPoints(remoteDto.getPoints());
-        }
-
-        // Update remote enemies from server
-        if (state.getEnemies() != null) {
+            // Smoothly interpolate toward target
+            remotePlayer.setTarget(remoteDto.getX(), remoteDto.getY());
             updateRemoteEnemies(state.getEnemies());
         }
     }
@@ -116,11 +128,10 @@ public class NetworkManager {
         for (EnemyDTO enemyDto : enemies) {
             RemoteEnemy remoteEnemy = remoteEnemies.get(enemyDto.getId());
             if (remoteEnemy == null) {
-                remoteEnemy = new RemoteEnemy(enemyDto.getId(), enemyDto.getX(), enemyDto.getY(), enemyDto.getEnemyType());
+                remoteEnemy = new RemoteEnemy(enemyDto.getId(), enemyDto.getX(), enemyDto.getY(), enemyDto.getEnemyType(), game.getTextures());
                 remoteEnemies.put(enemyDto.getId(), remoteEnemy);
             }
-            remoteEnemy.setX(enemyDto.getX());
-            remoteEnemy.setY(enemyDto.getY());
+            remoteEnemy.setTarget(enemyDto.getX(), enemyDto.getY());
         }
 
         // Remove enemies that no longer exist on server
