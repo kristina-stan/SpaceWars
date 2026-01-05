@@ -1,0 +1,11 @@
+{application,space_game,
+             [{modules,['Elixir.SpaceGame.Application',
+                        'Elixir.SpaceGame.ClientHandler',
+                        'Elixir.SpaceGame.GameState',
+                        'Elixir.SpaceGame.TCPServer']},
+              {optional_applications,[]},
+              {applications,[kernel,stdlib,elixir,logger,jason,ranch]},
+              {description,"space_game"},
+              {registered,[]},
+              {vsn,"0.1.0"},
+              {mod,{'Elixir.SpaceGame.Application',[]}}]}.
