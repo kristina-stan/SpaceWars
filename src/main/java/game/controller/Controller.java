@@ -79,6 +79,12 @@ public class Controller {
         eb.remove(block);
     }
 
+    public void setEntityA(LinkedList<EntityA> ea){
+        this.ea = ea;
+    }
+    public void setEntityB(LinkedList<EntityB> eb) {
+        this.eb = eb;
+    }
     public LinkedList<EntityA> getEntityA(){
         return ea;
     }

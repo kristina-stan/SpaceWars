@@ -1,8 +1,8 @@
 package game.net;
 
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 
 import game.graphics.Animation;
 import game.graphics.Textures;
@@ -26,7 +26,7 @@ public class RemoteEnemy {
         this.enemyType = enemyType;
 
         // Choose animation based on enemy type (handle both class names and type strings)
-        String typeUpper = enemyType != null ? enemyType.toUpperCase() : "";
+        String typeUpper = enemyType != null ? enemyType.toLowerCase() : "";
         if (typeUpper.contains("grunt")) {
             this.anim = new Animation(tex.bEnemy[0], tex.bEnemy[1]);
         } else if (typeUpper.contains("shooter")) {
@@ -92,20 +92,32 @@ public class RemoteEnemy {
         this.lastServerTime = serverRecvTimeMs;
     }
 
+    // *** NEW: Add getBounds() method for collision detection ***
+    public Rectangle getBounds() {
+        // Return a Rectangle representing the enemy's collision box
+        // This should match your local enemy hitbox size
+        return new Rectangle((int)x - WIDTH/2, (int)y - HEIGHT/2, WIDTH, HEIGHT);
+    }
+
     public double getVx() { return vx; }
     public double getVy() { return vy; }
 
     public void render(Graphics2D g) {
-        // Draw enemy as a simple square (different from local player)
-        g.setColor(new Color(255, 100, 100)); // Red for enemy
-        g.fillRect((int)x - WIDTH/2, (int)y - HEIGHT/2, WIDTH, HEIGHT);
+        // Draw enemy animation if available, otherwise draw simple square
+        if (anim != null && anim.getCurrentFrame() != null) {
+            g.drawImage(anim.getCurrentFrame(), (int)x - WIDTH/2, (int)y - HEIGHT/2, WIDTH, HEIGHT, null);
+        } else {
+            // Fallback: Draw enemy as a simple square
+            //g.setColor(new Color(255, 100, 100)); // Red for enemy
+            //g.fillRect((int)x - WIDTH/2, (int)y - HEIGHT/2, WIDTH, HEIGHT);
+        }
 
         // Add outline
-        g.setColor(Color.WHITE);
-        g.drawRect((int)x - WIDTH/2, (int)y - HEIGHT/2, WIDTH, HEIGHT);
+        //g.setColor(Color.WHITE);
+        //g.drawRect((int)x - WIDTH/2, (int)y - HEIGHT/2, WIDTH, HEIGHT);
 
         // Draw type indicator
-        g.setColor(Color.YELLOW);
+        //g.setColor(Color.YELLOW);
         g.setFont(new Font("Arial", Font.BOLD, 10));
         String label = enemyType.contains("Shooter") ? "S" : "G";
         g.drawString(label, (int)x - 5, (int)y + 5);

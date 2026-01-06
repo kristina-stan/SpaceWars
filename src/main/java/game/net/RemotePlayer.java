@@ -1,9 +1,9 @@
-
 package game.net;
 
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 
 public class RemotePlayer {
     private double x;
@@ -21,6 +21,8 @@ public class RemotePlayer {
     private final int playerId;
     private final double smoothing = 18.0; // higher = snappier
     private long lastUpdateTime = 0;
+    private static final int WIDTH = 32;
+    private static final int HEIGHT = 32;
 
     public RemotePlayer(double x, double y, int playerId) {
         this.x = x;
@@ -68,6 +70,13 @@ public class RemotePlayer {
         this.lastServerY = ty;
         this.lastServerTime = serverRecvTimeMs;
         this.lastUpdateTime = System.currentTimeMillis();
+    }
+
+    // *** NEW: Add getBounds() method for collision detection ***
+    public Rectangle getBounds() {
+        // Return a Rectangle representing the player's collision box
+        // This should match your local Player hitbox size
+        return new Rectangle((int)x - WIDTH/2, (int)y - HEIGHT/2, WIDTH, HEIGHT);
     }
 
     public double getVx() { return vx; }

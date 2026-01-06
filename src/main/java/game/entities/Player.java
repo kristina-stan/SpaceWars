@@ -74,15 +74,17 @@ public class Player extends GameObject implements EntityA, Shooter {
         if(y <= 0) y = 0;
         else if (y >= (Game.VIRTUAL_HEIGHT - 32)) y = Game.VIRTUAL_HEIGHT - 32;
 
-        // check collision with enemies
-        Iterator<EntityB> it = game.eb.iterator();
-        while (it.hasNext()) { 
-            EntityB enemy = it.next();
+        // check collision with enemies (only on host)
+        if(game.getNetworkManager().isHosting()) {
+            Iterator<EntityB> it = game.eb.iterator();
+            while (it.hasNext()) { 
+                EntityB enemy = it.next();
 
-            if (Physics.Collision(this, enemy)) {
-                it.remove();
-                this.hit(10);
-                removePoints(5); // penalty for getting hit by enemy
+                if (Physics.Collision(this, enemy)) {
+                    it.remove();
+                    this.hit(10);
+                    removePoints(5); // penalty for getting hit by enemy
+                }
             }
         }
         

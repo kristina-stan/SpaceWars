@@ -1,6 +1,7 @@
 package game.net;
 
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.Map;
 
 import game.core.Game;
 import game.entities.Player;
+import game.entities.interfaces.EntityA;
 import game.entities.interfaces.EntityB;
 import game.graphics.Textures;
 import game.net.dto.EnemyDTO;
@@ -25,7 +27,7 @@ public class NetworkManager {
     private final Map<String, Double> lastEnemyX = new HashMap<>();
     private final Map<String, Double> lastEnemyY = new HashMap<>();
     private final Map<String, Long> lastEnemyTime = new HashMap<>();
-    private static final boolean DEBUG = false; // set true to enable verbose networking logs
+    private static final boolean DEBUG = false;
 
     public NetworkManager(Game game) {
         this.game = game;
@@ -86,13 +88,12 @@ public class NetworkManager {
                     double lastY = lastEnemyY.get(id);
                     long lastT = lastEnemyTime.get(id);
                     long dtMs = nowMs - lastT;
-                    if (dtMs < 20) dtMs = 20; // avoid tiny dt
+                    if (dtMs < 20) dtMs = 20;
                     double dt = dtMs / 1000.0;
                     vx = (x - lastX) / dt;
                     vy = (y - lastY) / dt;
                 }
 
-                // Save for next tick
                 lastEnemyX.put(id, x);
                 lastEnemyY.put(id, y);
                 lastEnemyTime.put(id, nowMs);
@@ -114,6 +115,9 @@ public class NetworkManager {
         if (srt != null) {
             updateFromState(srt.state, srt.timestamp);
         }
+
+        // *** Handle collisions with remote entities ***
+        handleRemoteCollisions();
     }
 
     // Called once per game tick to smooth/interpolate remote entities
@@ -124,9 +128,81 @@ public class NetworkManager {
         }
     }
 
+    // *** Handle collisions with remote entities ***
+    private void handleRemoteCollisions() {
+        if (!multiplayerMode) return;
+
+        Player localPlayer = game.getPlayer();
+        
+        // CLIENT SIDE: Check collisions with remote enemies
+        if (!isHosting && !remoteEnemies.isEmpty()) {
+            // 1. Local player vs remote enemies
+            Rectangle playerBounds = getPlayerBounds(localPlayer);
+            for (RemoteEnemy remoteEnemy : remoteEnemies.values()) {
+                Rectangle enemyBounds = remoteEnemy.getBounds();
+                if (playerBounds.intersects(enemyBounds)) {
+                    // Player hit by remote enemy - reduce health
+                    int newHealth = localPlayer.getCurrent_health() - 1; // Gradual damage
+                    if (newHealth < 0) newHealth = 0;
+                    localPlayer.setCurrent_health(newHealth);
+                    if (DEBUG) System.out.println("Client: Local player hit by remote enemy!");
+                    
+                    if (newHealth <= 0) {
+                        game.gameOver();
+                    }
+                }
+            }
+            
+            // 2. Local bullets vs remote enemies
+            List<EntityA> bulletsToRemove = new ArrayList<>();
+            for (EntityA bullet : game.ea) {
+                Rectangle bulletBounds = bullet.getBounds();
+                for (RemoteEnemy remoteEnemy : remoteEnemies.values()) {
+                    Rectangle enemyBounds = remoteEnemy.getBounds();
+                    if (bulletBounds.intersects(enemyBounds)) {
+                        bulletsToRemove.add(bullet);
+                        localPlayer.addPoints(10); // Award points for hit
+                        if (DEBUG) System.out.println("Client: Local bullet hit remote enemy!");
+                        break; // Bullet can only hit one enemy
+                    }
+                }
+            }
+            
+            // Remove bullets that hit
+            for (EntityA bullet : bulletsToRemove) {
+                game.ea.remove(bullet);
+            }
+        }
+        
+        // HOST SIDE: Check remote player vs local enemies
+        if (isHosting && remotePlayer != null) {
+            Rectangle remotePlayerBounds = remotePlayer.getBounds();
+            
+            List<EntityB> enemiesToRemove = new ArrayList<>();
+            for (EntityB localEnemy : game.eb) {
+                Rectangle enemyBounds = localEnemy.getBounds();
+                if (remotePlayerBounds.intersects(enemyBounds)) {
+                    // Remote player hit by local enemy
+                    // Note: We can't directly modify remote player's health here
+                    // The server will sync health back to us
+                    if (DEBUG) System.out.println("Host: Remote player hit by local enemy!");
+                    // Optionally: mark enemy for removal if it should die on contact
+                }
+            }
+        }
+    }
+
+    // Helper method to get player bounds
+    private Rectangle getPlayerBounds(Player player) {
+        // Match the player's actual hitbox size
+        // Adjust these values to match your Player class implementation
+        int width = 32;
+        int height = 32;
+        return new Rectangle((int)player.getX() - width/2, (int)player.getY() - height/2, width, height);
+    }
+
     private void updateFromState(GameStateMessage.GameStateDTO state, long timestampMs) {
         long now = timestampMs > 0 ? timestampMs : System.currentTimeMillis();
-        // Debug: show who we think we are and what arrived
         if (client != null && DEBUG) {
             System.out.println("NetworkManager.updateFromState: myPlayerId=" + client.getMyPlayerId() + ", hasPlayer1=" + (state.getPlayer1() != null) + ", hasPlayer2=" + (state.getPlayer2() != null) + ", ts=" + now);
         }
@@ -142,44 +218,34 @@ public class NetworkManager {
         if (remoteDto != null) {
             if (DEBUG) System.out.println("NetworkManager: received remote player DTO -> id=" + remoteDto.getId() + ", x=" + remoteDto.getX() + ", y=" + remoteDto.getY());
 
-            // If this DTO represents the OTHER player, update/create RemotePlayer
             if (remoteDto.getId() != client.getMyPlayerId()) {
                 if (remotePlayer == null) {
-                    // Create and register a RemotePlayer instance for this remote id
                     remotePlayer = new RemotePlayer(remoteDto.getX(), remoteDto.getY(), (int) remoteDto.getId());
                     if (DEBUG) System.out.println("NetworkManager: created RemotePlayer id=" + remoteDto.getId());
                 } else {
-                    // Debug update
                     if (DEBUG) System.out.println("NetworkManager: updating RemotePlayer target to x=" + remoteDto.getX() + " y=" + remoteDto.getY());
                 }
-                // Smoothly interpolate toward predicted target (extrapolated)
                 if (remotePlayer != null) {
                     remotePlayer.setTargetFromServer(remoteDto.getX(), remoteDto.getY(), now);
                     remotePlayer.setHealth(remoteDto.getHealth());
                     remotePlayer.setPoints(remoteDto.getPoints());
                 }
-
             } else {
-                // This DTO is for *us* (authoritative server state). Apply health/position from server.
                 if (DEBUG) System.out.println("NetworkManager: applying authoritative local player state: x=" + remoteDto.getX() + " y=" + remoteDto.getY() + " health=" + remoteDto.getHealth());
                 Player local = game.getPlayer();
                 if (local != null) {
-                    // Apply health immediately
                     local.setCurrent_health(remoteDto.getHealth());
                     local.setPoints(remoteDto.getPoints());
-                    // Smoothly correct position to server (small snap reduction)
                     local.setX(remoteDto.getX());
                     local.setY(remoteDto.getY());
                 }
             }
         }
 
-        // Always update remote enemies even if there's no remote player DTO
         updateRemoteEnemies(state.getEnemies() != null ? state.getEnemies() : java.util.Collections.emptyList(), now);
     }
 
     private void updateRemoteEnemies(List<EnemyDTO> enemies, long serverRecvTimeMs) {
-        // Update existing and add new remote enemies
         for (EnemyDTO enemyDto : enemies) {
             RemoteEnemy remoteEnemy = remoteEnemies.get(enemyDto.getId());
             if (remoteEnemy == null) {
@@ -196,7 +262,6 @@ public class NetworkManager {
             }
         }
 
-        // Remove enemies that no longer exist on server
         List<String> toRemove = new ArrayList<>();
         for (String id : remoteEnemies.keySet()) {
             boolean found = enemies.stream().anyMatch(e -> e.getId().equals(id));
@@ -212,12 +277,10 @@ public class NetworkManager {
             return;
         }
 
-        // Render remote player
         if (remotePlayer != null) {
             remotePlayer.render(g);
         }
 
-        // Render remote enemies (only if we're NOT hosting - host sees local enemies)
         if (!isHosting) {
             for (RemoteEnemy enemy : remoteEnemies.values()) {
                 enemy.render(g);
@@ -257,4 +320,3 @@ public class NetworkManager {
         return remoteEnemies;
     }
 }
-

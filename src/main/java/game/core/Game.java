@@ -27,8 +27,8 @@ import game.input.MouseInput;
 import game.managers.EnemySpawner;
 import game.managers.PlayerUpgader;
 import game.managers.UpgradeManager;
-import game.ui.Menu;
 import game.net.NetworkManager;
+import game.ui.Menu;
 
 public class Game extends Canvas implements Runnable {
 
@@ -168,7 +168,7 @@ public class Game extends Canvas implements Runnable {
 
             if(System.currentTimeMillis() - timer > 1000){
                 timer += 1000;
-                System.out.println("FPS: " + frames + ", TICKS: " + updates);
+//System.out.println("FPS: " + frames + ", TICKS: " + updates);
                 updates = 0;
                 frames = 0;
             }

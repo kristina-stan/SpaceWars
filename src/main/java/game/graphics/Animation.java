@@ -404,4 +404,7 @@ public class Animation {
         this.speed = speed;
     }
 
+    public BufferedImage getCurrentFrame() {
+        return currentImg;
+    }
 }
