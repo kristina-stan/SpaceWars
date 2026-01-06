@@ -13,7 +13,9 @@ public class RemotePlayer {
     private int playerId;
     private static final int WIDTH = 32;
     private static final int HEIGHT = 32;
-    private final double smoothing = 8.0; // higher = snappier
+    private final double smoothing = 40.0; // higher = snappier
+    private double vx = 0.0;
+    private double vy = 0.0;
 
     public RemotePlayer(double x, double y, int playerId) {
         this.x = x;
@@ -30,11 +32,20 @@ public class RemotePlayer {
         double t = Math.min(1.0, smoothing * deltaTime);
         this.x += (targetX - this.x) * t;
         this.y += (targetY - this.y) * t;
+        // small extrapolation to smooth movement
+        double extrapolationFactor = 0.5;
+        this.x += vx * deltaTime * extrapolationFactor;
+        this.y += vy * deltaTime * extrapolationFactor;
     }
 
     public void setTarget(double tx, double ty) {
         this.targetX = tx;
         this.targetY = ty;
+    }
+
+    public void setVelocity(double vx, double vy) {
+        this.vx = vx;
+        this.vy = vy;
     }
 
     public void render(Graphics2D g) {

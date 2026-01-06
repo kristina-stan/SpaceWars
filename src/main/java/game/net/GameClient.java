@@ -1,13 +1,20 @@
 package game.net;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import game.net.dto.*;
-
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import game.net.dto.ConnectionMessage;
+import game.net.dto.EnemyDTO;
+import game.net.dto.EnemyUpdateMessage;
+import game.net.dto.GameStateMessage;
+import game.net.dto.PlayerUpdateMessage;
 
 public class GameClient {
     private Socket socket;
@@ -89,10 +96,7 @@ public class GameClient {
 
             case "state_update":
                 GameStateMessage stateMsg = gson.fromJson(json, GameStateMessage.class);
-                GameStateMessage.GameStateDTO s = stateMsg.getState();
-                int enemyCount = s.getEnemies() != null ? s.getEnemies().size() : 0;
-                System.out.println("Received state_update: enemies=" + enemyCount + ", p1=" + (s.getPlayer1() != null) + ", p2=" + (s.getPlayer2() != null));
-                stateQueue.offer(s);
+                stateQueue.offer(stateMsg.getState());
                 break;
 
             case "player_disconnected":
@@ -109,10 +113,10 @@ public class GameClient {
         }
     }
 
-    public void sendPlayerUpdate(double x, double y, int health, int points) {
+    public void sendPlayerUpdate(double x, double y, double vx, double vy, int health, int points) {
         if (!connected) return;
 
-        PlayerUpdateMessage msg = new PlayerUpdateMessage(x, y, health, points);
+        PlayerUpdateMessage msg = new PlayerUpdateMessage(x, y, vx, vy, health, points);
         sendMessage(msg);
     }
 

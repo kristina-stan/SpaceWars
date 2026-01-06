@@ -1,6 +1,9 @@
 package game.net.dto;
 
+import com.google.gson.annotations.SerializedName;
+
 public class ConnectionMessage extends GameMessage {
+    @SerializedName("player_id")
     private int playerId;
 
     public ConnectionMessage() {

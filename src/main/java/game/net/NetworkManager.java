@@ -21,6 +21,9 @@ public class NetworkManager {
     private boolean isHosting;
     private String serverIp;
     private Map<String, RemoteEnemy> remoteEnemies = new HashMap<>();
+    // Track previous enemy samples to compute velocities when hosting
+    private static class EnemySample { double x; double y; long timeMs; EnemySample(double x, double y, long t){this.x=x;this.y=y;this.timeMs=t;} }
+    private Map<String, EnemySample> prevEnemySamples = new HashMap<>();
 
     public NetworkManager(Game game) {
         this.game = game;
@@ -51,6 +54,10 @@ public class NetworkManager {
         return serverIp;
     }
 
+    // Track previous player sample to compute velocity per second
+    private static class PlayerSample { double x; double y; long timeMs; PlayerSample(double x,double y,long t){this.x=x;this.y=y;this.timeMs=t;} }
+    private PlayerSample prevPlayerSample = null;
+
     public void tick() {
         if (!multiplayerMode || client == null || !client.isConnected()) {
             return;
@@ -58,9 +65,24 @@ public class NetworkManager {
 
         // Send local player state
         Player localPlayer = game.getPlayer();
+        double vx = 0.0, vy = 0.0;
+        long now = System.currentTimeMillis();
+        if (prevPlayerSample != null) {
+            double dt = (now - prevPlayerSample.timeMs) / 1000.0;
+            if (dt > 0) {
+                vx = (localPlayer.getX() - prevPlayerSample.x) / dt;
+                vy = (localPlayer.getY() - prevPlayerSample.y) / dt;
+            }
+            prevPlayerSample.x = localPlayer.getX(); prevPlayerSample.y = localPlayer.getY(); prevPlayerSample.timeMs = now;
+        } else {
+            prevPlayerSample = new PlayerSample(localPlayer.getX(), localPlayer.getY(), now);
+        }
+
         client.sendPlayerUpdate(
                 localPlayer.getX(),
                 localPlayer.getY(),
+                vx,
+                vy,
                 localPlayer.getCurrent_health(),
                 localPlayer.getPoints()
         );
@@ -68,11 +90,34 @@ public class NetworkManager {
         // Player 1 (host) sends enemy updates
         if (client.getMyPlayerId() == 1) {
             List<EnemyDTO> enemyDTOs = new ArrayList<>();
+            long nowEnemies = System.currentTimeMillis();
             for (EntityB enemy : game.eb) {
+                String id = String.valueOf(System.identityHashCode(enemy));
+                double x = enemy.getX();
+                double y = enemy.getY();
+
+                // compute velocity since last sample
+                double evx = 0.0;
+                double evy = 0.0;
+                EnemySample sample = prevEnemySamples.get(id);
+                if (sample != null) {
+                    double dt = (nowEnemies - sample.timeMs) / 1000.0;
+                    if (dt > 0) {
+                        evx = (x - sample.x) / dt;
+                        evy = (y - sample.y) / dt;
+                    }
+                    // update sample
+                    sample.x = x; sample.y = y; sample.timeMs = nowEnemies;
+                } else {
+                    prevEnemySamples.put(id, new EnemySample(x, y, nowEnemies));
+                }
+
                 enemyDTOs.add(new EnemyDTO(
-                        String.valueOf(System.identityHashCode(enemy)),
-                        enemy.getX(),
-                        enemy.getY(),
+                        id,
+                        x,
+                        y,
+                        evx,
+                        evy,
                         enemy.getClass().getSimpleName()
                 ));
             }
@@ -109,7 +154,7 @@ public class NetworkManager {
         }
 
         if (remoteDto != null) {
-            System.out.println("NetworkManager: received remote player DTO -> id=" + remoteDto.getId() + ", x=" + remoteDto.getX() + ", y=" + remoteDto.getY());
+            System.out.println("NetworkManager: received remote player DTO -> id=" + remoteDto.getId() + ", x=" + remoteDto.getX() + ", y=" + remoteDto.getY() + ", vx=" + remoteDto.getVx() + ", vy=" + remoteDto.getVy());
             if (remotePlayer == null) {
                 System.out.println("NetworkManager: creating RemotePlayer for id=" + remoteDto.getId());
                 remotePlayer = new RemotePlayer(remoteDto.getX(), remoteDto.getY(), remoteDto.getId());
@@ -117,13 +162,21 @@ public class NetworkManager {
                 // Debug update
                 System.out.println("NetworkManager: updating RemotePlayer target to x=" + remoteDto.getX() + " y=" + remoteDto.getY());
             }
-            // Smoothly interpolate toward target
-            remotePlayer.setTarget(remoteDto.getX(), remoteDto.getY());
-            updateRemoteEnemies(state.getEnemies());
+            // apply small lead based on reported velocity to reduce visible lag
+            double leadSeconds = 0.06; // 60ms lead
+            remotePlayer.setTarget(remoteDto.getX() + remoteDto.getVx() * leadSeconds, remoteDto.getY() + remoteDto.getVy() * leadSeconds);
+            remotePlayer.setVelocity(remoteDto.getVx(), remoteDto.getVy());
+            remotePlayer.setHealth(remoteDto.getHealth());
+            remotePlayer.setPoints(remoteDto.getPoints());
+            if (state.getEnemies() != null) {
+                updateRemoteEnemies(state.getEnemies());
+            }
+
         }
     }
 
     private void updateRemoteEnemies(List<EnemyDTO> enemies) {
+        if (enemies == null) return;
         // Update existing and add new remote enemies
         for (EnemyDTO enemyDto : enemies) {
             RemoteEnemy remoteEnemy = remoteEnemies.get(enemyDto.getId());
@@ -131,7 +184,13 @@ public class NetworkManager {
                 remoteEnemy = new RemoteEnemy(enemyDto.getId(), enemyDto.getX(), enemyDto.getY(), enemyDto.getEnemyType(), game.getTextures());
                 remoteEnemies.put(enemyDto.getId(), remoteEnemy);
             }
-            remoteEnemy.setTarget(enemyDto.getX(), enemyDto.getY());
+            // apply small lead based on reported velocity to reduce visible lag
+            double leadSeconds = 0.06; // 60ms lead
+            double leadX = enemyDto.getX() + enemyDto.getVx() * leadSeconds;
+            double leadY = enemyDto.getY() + enemyDto.getVy() * leadSeconds;
+            remoteEnemy.setTarget(leadX, leadY);
+            remoteEnemy.setVelocity(enemyDto.getVx(), enemyDto.getVy());
+            System.out.println("NetworkManager: remoteEnemy updated id=" + enemyDto.getId() + " target=("+leadX+","+leadY+") vx=" + enemyDto.getVx() + " vy=" + enemyDto.getVy());
         }
 
         // Remove enemies that no longer exist on server
@@ -149,6 +208,8 @@ public class NetworkManager {
         if (!multiplayerMode) {
             return;
         }
+
+        System.out.println("NetworkManager.render: isHosting=" + isHosting + ", remoteEnemies=" + remoteEnemies.size());
 
         // Render remote player
         if (remotePlayer != null) {

@@ -16,8 +16,10 @@ public class RemoteEnemy {
     private String enemyType;
     private static final int WIDTH = 32;
     private static final int HEIGHT = 32;
-    private final double smoothing = 8.0;
+    private final double smoothing = 40.0;
     private Animation anim;
+    private double vx = 0.0;
+    private double vy = 0.0;
 
     public RemoteEnemy(String id, double x, double y, String enemyType, Textures tex) {
         this.id = id;
@@ -40,14 +42,24 @@ public class RemoteEnemy {
 
     public void update(double deltaTime) {
         double t = Math.min(1.0, smoothing * deltaTime);
+        // Interpolate towards target position
         this.x += (targetX - this.x) * t;
         this.y += (targetY - this.y) * t;
+        // Small extrapolation based on reported velocity to hide packet delay
+        double extrapolationFactor = 0.5; // adjust to taste
+        this.x += vx * deltaTime * extrapolationFactor;
+        this.y += vy * deltaTime * extrapolationFactor;
         if (anim != null) anim.runAnimation();
     }
 
     public void setTarget(double tx, double ty) {
         this.targetX = tx;
         this.targetY = ty;
+    }
+
+    public void setVelocity(double vx, double vy) {
+        this.vx = vx;
+        this.vy = vy;
     }
 
     public void render(Graphics2D g) {

@@ -11,11 +11,7 @@ defmodule SpaceGame.ClientHandler do
     case SpaceGame.GameState.add_player(self()) do
       {:ok, player_id} ->
         :inet.setopts(socket, active: true)
-<<<<<<< Updated upstream
-        # Use camelCase key so Java client (Gson) maps it to `playerId`
-=======
         # Use camelCase key so Java client maps it to `playerId`
->>>>>>> Stashed changes
         send(self(), {:send, %{type: "connection", playerId: player_id}})
         Logger.info("Client connected as Player #{player_id}")
         {:ok, %{socket: socket, player_id: player_id}}
@@ -77,7 +73,7 @@ defmodule SpaceGame.ClientHandler do
     # Convert player structs to simple maps without PIDs to avoid Jason encoding errors
     player_to_dto = fn
       nil -> nil
-      p -> %{id: p.id, x: p.x, y: p.y, health: p.health}
+      p -> %{id: p.id, x: p.x, y: p.y, vx: Map.get(p, :vx, 0), vy: Map.get(p, :vy, 0), health: p.health, points: Map.get(p, :points, 0)}
     end
 
     message = %{
@@ -97,7 +93,10 @@ defmodule SpaceGame.ClientHandler do
     data = %{
       x: msg["x"],
       y: msg["y"],
-      health: msg["health"]
+      vx: msg["vx"],
+      vy: msg["vy"],
+      health: msg["health"],
+      points: msg["points"]
     }
     SpaceGame.GameState.update_player(state.player_id, data)
     SpaceGame.GameState.broadcast_state()
