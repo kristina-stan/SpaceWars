@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 import game.core.Game;
 import game.entities.Bullet;
@@ -32,6 +34,7 @@ public class NetworkManager {
     private final Map<String, Long> lastEnemyTime = new HashMap<>();
     private final LinkedList<BulletDTO> bulletCache = new LinkedList<>();
     private final Map<String, Bullet> remoteBullets = new HashMap<>();  // Track remote bullets on host
+    private final Set<String> localBulletIds = new HashSet<>(); // IDs of bullets created locally and owned by this player
     private static final boolean DEBUG = false;
 
     public NetworkManager(Game game) {
@@ -93,12 +96,22 @@ public class NetworkManager {
         // Send local player state with bullets
         Player localPlayer = game.getPlayer();
         
-        // Collect bullets as DTOs
+        // Collect bullets as DTOs (only bullets owned by the local player)
         List<BulletDTO> bulletDTOs = new ArrayList<>();
         for (EntityA bullet : game.ea) {
             String bulletId = String.valueOf(System.identityHashCode(bullet));
-            bulletDTOs.add(new BulletDTO(bulletId, bullet.getX(), bullet.getY(), bullet.getIsFriendly()));
+            // Only include bullets we registered as local-owned (prevents duplicates across network)
+            if (bullet.getIsFriendly() && localBulletIds.contains(bulletId)) {
+                bulletDTOs.add(new BulletDTO(bulletId, bullet.getX(), bullet.getY(), bullet.getIsFriendly()));
+            }
         }
+        
+        // Prune localBulletIds to only keep bullets that still exist locally
+        Set<String> existingIds = new HashSet<>();
+        for (BulletDTO dto : bulletDTOs) {
+            existingIds.add(dto.getId());
+        }
+        localBulletIds.retainAll(existingIds);
         
         if (DEBUG && bulletDTOs.size() > 0) {
             System.out.println("NetworkManager.tick: Sending " + bulletDTOs.size() + " bullets");
@@ -390,6 +403,17 @@ public class NetworkManager {
         remoteEnemies.clear();
         isHosting = false;
         serverIp = "";
+    }
+
+    /**
+     * Register a locally-created bullet so it will be included in outgoing player updates.
+     * This prevents remote bullets from being re-sent as "new" bullets by the other peer.
+     */
+    public void registerLocalBullet(Bullet b) {
+        if (b == null) return;
+        String id = String.valueOf(System.identityHashCode(b));
+        localBulletIds.add(id);
+        if (DEBUG) System.out.println("NetworkManager: Registered local bullet id=" + id);
     }
 
     public RemotePlayer getRemotePlayer() {

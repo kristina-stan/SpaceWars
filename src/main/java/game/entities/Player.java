@@ -147,7 +147,12 @@ public class Player extends GameObject implements EntityA, Shooter {
     }
     @Override
     public void shoot(){
-        c.addEntity(new Bullet(getX(), getY() + 30, tex, game, true));       
+        Bullet b = new Bullet(getX(), getY() + 30, tex, game, true);
+        c.addEntity(b);
+        // Register this bullet as owned by the local player so it will be synced to remote
+        if (game != null && game.getNetworkManager() != null && game.getNetworkManager().isMultiplayerMode()) {
+            game.getNetworkManager().registerLocalBullet(b);
+        }
     }
     public void setVelX(double velX) {
         this.velX = velX;
