@@ -48,11 +48,20 @@ public class Bullet extends GameObject implements EntityA {
 
     @Override
     public double getX() {
-        return 0;
+        return x;
     }
+    
+    public void setX(double x) {
+        this.x = x;
+    }
+    
     @Override
     public double getY(){
         return y;
+    }
+    
+    public void setY(double y) {
+        this.y = y;
     }
 
 }

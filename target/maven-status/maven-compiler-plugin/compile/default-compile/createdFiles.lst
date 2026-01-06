@@ -14,6 +14,7 @@ game\net\dto\GameMessage.class
 game\systems\CollisionSystem.class
 game\net\RemoteEnemy.class
 game\config\GameConfig.class
+game\net\dto\BulletDTO.class
 game\config\GameConfig$EnemyConfig.class
 game\entities\Player.class
 game\net\dto\PlayerDTO.class
@@ -28,6 +29,7 @@ game\systems\CombatSystem.class
 game\graphics\Textures.class
 game\graphics\SpriteSheet.class
 game\net\RemotePlayer.class
+game\net\GameClient$StateWithTimestamp.class
 game\graphics\MovingBackground$1.class
 game\entities\interfaces\Shooter.class
 game\input\MouseInput.class

@@ -9,11 +9,12 @@ import game.core.Game;
 public final class Textures {
 
     public static BufferedImage[] player = new BufferedImage[6];// for staying on one place
+    public static BufferedImage[] player2 = new BufferedImage[6];
     public static BufferedImage[] missle = new BufferedImage[2];
 
-    public static BufferedImage[] gEnemy = new BufferedImage[2];
-    public static BufferedImage[] bEnemy = new BufferedImage[2];
-    public static BufferedImage[] yEnemy = new BufferedImage[2];
+    public BufferedImage[] gEnemy = new BufferedImage[2];
+    public BufferedImage[] bEnemy = new BufferedImage[2];
+    public BufferedImage[] yEnemy = new BufferedImage[2];
 
     private SpriteSheet ss;
 
@@ -30,6 +31,13 @@ public final class Textures {
        player[4] = ss.grabImage(1,5,32,32); //going right
        player[5] = ss.grabImage(1,6,32,32); //going left
 
+        player2[0] = ss.grabImage(8,1,32,32); // in place
+       player2[1] = ss.grabImage(8,2,32,32); // in place
+       player2[2] = ss.grabImage(8,3,32,32); // speeding
+       player2[3] = ss.grabImage(8,4,32,32); //speeding
+       player2[4] = ss.grabImage(8,5,32,32); //going right
+       player2[5] = ss.grabImage(8,6,32,32); //going left
+       
        missle[0] = ss.grabImage(2,1,32,32);
        missle[1] = ss.grabImage(2,2,32,32);
        

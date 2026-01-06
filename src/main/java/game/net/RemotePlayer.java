@@ -1,9 +1,12 @@
-
 package game.net;
 
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
+
+import game.graphics.Animation;
+import game.graphics.Textures;
 
 public class RemotePlayer {
     private double x;
@@ -21,8 +24,12 @@ public class RemotePlayer {
     private final int playerId;
     private final double smoothing = 18.0; // higher = snappier
     private long lastUpdateTime = 0;
+    private static final int WIDTH = 32;
+    private static final int HEIGHT = 32;
+    private Animation[] anim = new Animation[4];
+    private final Textures tex;
 
-    public RemotePlayer(double x, double y, int playerId) {
+    public RemotePlayer(double x, double y, int playerId, Textures tex) {
         this.x = x;
         this.y = y;
         this.targetX = x;
@@ -36,6 +43,14 @@ public class RemotePlayer {
         this.points = 0;
         this.playerId = playerId;
         this.lastUpdateTime = System.currentTimeMillis();
+        this.tex = tex;
+        
+        // Initialize animations with player1 or player2 sprites based on playerId
+        java.awt.image.BufferedImage[] playerSprites = (playerId == 2) ? Textures.player2 : Textures.player;
+        anim[0] = new Animation(playerSprites[0], playerSprites[1]); // idle
+        anim[1] = new Animation(playerSprites[2], playerSprites[3]); // moving up
+        anim[2] = new Animation(playerSprites[4]); // moving right
+        anim[3] = new Animation(playerSprites[5]); // moving left
     }
 
     // Call this every tick to smooth movement (deltaTime in seconds)
@@ -70,25 +85,26 @@ public class RemotePlayer {
         this.lastUpdateTime = System.currentTimeMillis();
     }
 
+    // *** NEW: Add getBounds() method for collision detection ***
+    public Rectangle getBounds() {
+        // Return a Rectangle representing the player's collision box
+        // This should match your local Player hitbox size
+        return new Rectangle((int)x - WIDTH/2, (int)y - HEIGHT/2, WIDTH, HEIGHT);
+    }
+
     public double getVx() { return vx; }
     public double getVy() { return vy; }
     public double getTargetX() { return targetX; }
     public double getTargetY() { return targetY; }
 
     public void render(Graphics2D g) {
-        // Draw remote player ship (different color from local player)
-        g.setColor(new Color(0, 200, 255)); // Cyan/Blue
+        // Run animation
+        if (anim != null) {
+            anim[0].runAnimation(); // Run idle animation for now (can enhance with velocity detection)
+            anim[0].drawAnimation(g, x, y, 0);
+        }
 
-        // Simple ship shape (triangle pointing up)
-        int[] xPoints = {(int)x, (int)x - 16, (int)x + 16};
-        int[] yPoints = {(int)y, (int)y + 32, (int)y + 32};
-        g.fillPolygon(xPoints, yPoints, 3);
-
-        // Add outline
-        g.setColor(Color.WHITE);
-        g.drawPolygon(xPoints, yPoints, 3);
-
-        // Draw health bar above ship
+        // Draw health bar above player
         int barWidth = 40;
         int barHeight = 5;
         int barX = (int)x - barWidth/2;

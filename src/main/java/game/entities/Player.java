@@ -2,6 +2,7 @@ package game.entities;
 
 import java.awt.Graphics;
 import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
 import java.util.Iterator;
 
 import game.config.GameConfig;
@@ -36,6 +37,10 @@ public class Player extends GameObject implements EntityA, Shooter {
     Animation[] anim = new Animation[4];
 
     public Player(double x, double y, Textures tex, Controller c, Game game, GameConfig config) {
+        this(x, y, tex, c, game, config, false);
+    }
+
+    public Player(double x, double y, Textures tex, Controller c, Game game, GameConfig config, boolean usePlayer2) {
         super(x, y, tex, game, c);
 
         GameConfig.PlayerConfig pConfig = config.player;
@@ -48,10 +53,13 @@ public class Player extends GameObject implements EntityA, Shooter {
         this.shield_duration = pConfig.shield_duration;
         this.points = pConfig.points;
 
-        anim[0] = new Animation(Textures.player[0], Textures.player[1]); // idle
-        anim[1] = new Animation(Textures.player[2], Textures.player[3]); // moving up
-        anim[2] = new Animation(Textures.player[4]); // moving right
-        anim[3] = new Animation(Textures.player[5]); // moving left
+        // Use player2 sprites if this is the client player
+        BufferedImage[] playerSprites = usePlayer2 ? Textures.player2 : Textures.player;
+        
+        anim[0] = new Animation(playerSprites[0], playerSprites[1]); // idle
+        anim[1] = new Animation(playerSprites[2], playerSprites[3]); // moving up
+        anim[2] = new Animation(playerSprites[4]); // moving right
+        anim[3] = new Animation(playerSprites[5]); // moving left
         
     }
 
@@ -74,15 +82,17 @@ public class Player extends GameObject implements EntityA, Shooter {
         if(y <= 0) y = 0;
         else if (y >= (Game.VIRTUAL_HEIGHT - 32)) y = Game.VIRTUAL_HEIGHT - 32;
 
-        // check collision with enemies
-        Iterator<EntityB> it = game.eb.iterator();
-        while (it.hasNext()) { 
-            EntityB enemy = it.next();
+        // check collision with enemies (only on host)
+        if(game.getNetworkManager().isHosting()) {
+            Iterator<EntityB> it = game.eb.iterator();
+            while (it.hasNext()) { 
+                EntityB enemy = it.next();
 
-            if (Physics.Collision(this, enemy)) {
-                it.remove();
-                this.hit(10);
-                removePoints(5); // penalty for getting hit by enemy
+                if (Physics.Collision(this, enemy)) {
+                    it.remove();
+                    this.hit(10);
+                    removePoints(5); // penalty for getting hit by enemy
+                }
             }
         }
         
@@ -137,7 +147,12 @@ public class Player extends GameObject implements EntityA, Shooter {
     }
     @Override
     public void shoot(){
-        c.addEntity(new Bullet(getX(), getY() + 30, tex, game, true));       
+        Bullet b = new Bullet(getX(), getY() + 30, tex, game, true);
+        c.addEntity(b);
+        // Register this bullet as owned by the local player so it will be synced to remote
+        if (game != null && game.getNetworkManager() != null && game.getNetworkManager().isMultiplayerMode()) {
+            game.getNetworkManager().registerLocalBullet(b);
+        }
     }
     public void setVelX(double velX) {
         this.velX = velX;
@@ -199,5 +214,8 @@ public class Player extends GameObject implements EntityA, Shooter {
         return false;
     }
 
+    public Textures getTex() {
+        return tex;
+    }
 
 }

@@ -27,8 +27,8 @@ import game.input.MouseInput;
 import game.managers.EnemySpawner;
 import game.managers.PlayerUpgader;
 import game.managers.UpgradeManager;
-import game.ui.Menu;
 import game.net.NetworkManager;
+import game.ui.Menu;
 
 public class Game extends Canvas implements Runnable {
 
@@ -108,7 +108,8 @@ public class Game extends Canvas implements Runnable {
         //---------- INITIALISE OBJECTS ----------
         tex = new Textures(this);
         c = new Controller(tex, this);
-        p = new Player(VIRTUAL_WIDTH/2, 0, tex, c, this, config);
+        // Initially create player with default sprite (player 1)
+        p = new Player(VIRTUAL_WIDTH/2, 0, tex, c, this, config, false);
         menu = new Menu();
 
         //playerInputs = new PlayerInputs(p);
@@ -168,7 +169,7 @@ public class Game extends Canvas implements Runnable {
 
             if(System.currentTimeMillis() - timer > 1000){
                 timer += 1000;
-                System.out.println("FPS: " + frames + ", TICKS: " + updates);
+//System.out.println("FPS: " + frames + ", TICKS: " + updates);
                 updates = 0;
                 frames = 0;
             }
@@ -350,7 +351,8 @@ public class Game extends Canvas implements Runnable {
     }
 
     public void resetGame(){
-        p = new Player(400, 700, tex, c, this, config);
+        boolean usePlayer2Sprite = networkManager.isMultiplayerMode() && !networkManager.isHosting();
+        p = new Player(400, 700, tex, c, this, config, usePlayer2Sprite);
 
         c.getEntityA().clear();
         c.getEntityB().clear();
@@ -506,5 +508,13 @@ public class Game extends Canvas implements Runnable {
     }
     public Player getPlayer(){
         return this.p;
+    }
+
+    public void setPlayer(Player newPlayer) {
+        this.p = newPlayer;
+    }
+
+    public Controller getController() {
+        return c;
     }
 }

@@ -76,7 +76,8 @@ defmodule SpaceGame.ClientHandler do
           x: player.x,
           y: player.y,
           health: player.health,
-          points: Map.get(player, :points, 0)
+          points: Map.get(player, :points, 0),
+          bullets: Map.get(player, :bullets, [])
         }
       else
         nil
@@ -110,7 +111,9 @@ defmodule SpaceGame.ClientHandler do
     data = %{
       x: msg["x"],
       y: msg["y"],
-      health: msg["health"]
+      health: msg["health"],
+      points: msg["points"],
+      bullets: msg["bullets"] || []
     }
     SpaceGame.GameState.update_player(state.player_id, data)
     SpaceGame.GameState.broadcast_state()

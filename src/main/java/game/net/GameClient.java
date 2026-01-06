@@ -4,12 +4,14 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import game.net.dto.BulletDTO;
 import game.net.dto.ConnectionMessage;
 import game.net.dto.EnemyDTO;
 import game.net.dto.EnemyUpdateMessage;
@@ -132,6 +134,13 @@ public class GameClient {
         if (!connected) return;
 
         PlayerUpdateMessage msg = new PlayerUpdateMessage(x, y, health, points);
+        sendMessage(msg);
+    }
+
+    public void sendPlayerUpdate(double x, double y, int health, int points, List<BulletDTO> bullets) {
+        if (!connected) return;
+
+        PlayerUpdateMessage msg = new PlayerUpdateMessage(x, y, health, points, bullets);
         sendMessage(msg);
     }
 
