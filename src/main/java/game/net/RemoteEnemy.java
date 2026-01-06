@@ -30,12 +30,12 @@ public class RemoteEnemy {
         // Choose animation based on enemy type (handle both class names and type strings)
         String typeUpper = enemyType != null ? enemyType.toUpperCase() : "";
         if (typeUpper.contains("grunt")) {
-            this.anim = new Animation(tex.bEnemy[0], tex.bEnemy[1]);
+            this.anim = new Animation(Textures.bEnemy[0], Textures.bEnemy[1]);
         } else if (typeUpper.contains("shooter")) {
-            this.anim = new Animation(tex.yEnemy[0]);
+            this.anim = new Animation(Textures.yEnemy[0]);
         } else {
             // default
-            this.anim = new Animation(tex.gEnemy[0], tex.gEnemy[1]);
+            this.anim = new Animation(Textures.gEnemy[0], Textures.gEnemy[1]);
         }
     }
 

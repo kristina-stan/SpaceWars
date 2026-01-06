@@ -11,6 +11,7 @@ import game.ui.Menu;
 public class MouseInput implements MouseListener {
 
     private Game game;
+    @SuppressWarnings("unused")
     private Menu menu;
 
     // MENU buttons

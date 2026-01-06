@@ -16,7 +16,7 @@ public class EnemyGrunt extends Enemy {
         super(
             x, y,
             tex, c, game,
-            new Animation(tex.bEnemy[0], tex.bEnemy[1]),
+            new Animation(Textures.bEnemy[0], Textures.bEnemy[1]),
             "grunt",
             game.getConfig()
         );

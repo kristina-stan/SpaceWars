@@ -98,8 +98,8 @@ public class NetworkManager {
                 double x = enemy.getX();
                 double y = enemy.getY();
 
-                double vx = 0.0;
-                double vy = 0.0;
+                double evx = 0.0;
+                double evy = 0.0;
                 if (lastEnemyX.containsKey(id) && lastEnemyY.containsKey(id) && lastEnemyTime.containsKey(id)) {
                     double lastX = lastEnemyX.get(id);
                     double lastY = lastEnemyY.get(id);
@@ -107,8 +107,8 @@ public class NetworkManager {
                     long dtMs = nowMs - lastT;
                     if (dtMs < 20) dtMs = 20; // avoid tiny dt
                     double dt = dtMs / 1000.0;
-                    vx = (x - lastX) / dt;
-                    vy = (y - lastY) / dt;
+                    evx = (x - lastX) / dt;
+                    evy = (y - lastY) / dt;
                 }
 
                 // Save for next tick
@@ -117,12 +117,12 @@ public class NetworkManager {
                 lastEnemyTime.put(id, nowMs);
 
                 enemyDTOs.add(new EnemyDTO(
-                        id,
-                        x,
-                        y,
-                        enemy.getClass().getSimpleName(),
-                        vx,
-                        vy
+                    id,
+                    x,
+                    y,
+                    enemy.getClass().getSimpleName(),
+                    evx,
+                    evy
                 ));
             }
             client.sendEnemyUpdate(enemyDTOs);
@@ -145,11 +145,6 @@ public class NetworkManager {
 
     private void updateFromState(GameStateMessage.GameStateDTO state, long timestampMs) {
         long now = timestampMs > 0 ? timestampMs : System.currentTimeMillis();
-        // Debug: show who we think we are and what arrived
-        if (client != null && DEBUG) {
-            System.out.println("NetworkManager.updateFromState: myPlayerId=" + client.getMyPlayerId() + ", hasPlayer1=" + (state.getPlayer1() != null) + ", hasPlayer2=" + (state.getPlayer2() != null) + ", ts=" + now);
-        }
-
         // Update remote player
         PlayerDTO remoteDto = null;
         if (client.getMyPlayerId() == 1 && state.getPlayer2() != null) {

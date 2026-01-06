@@ -20,7 +20,7 @@ public class EnemyShooter extends Enemy implements Shooter {
         super(
             x, y,
             tex, c, game,
-            new Animation(tex.yEnemy[0]),
+            new Animation(Textures.yEnemy[0]),
             "shooter",
             game.getConfig()
         );

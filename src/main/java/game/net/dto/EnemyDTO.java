@@ -7,8 +7,6 @@ public class EnemyDTO {
     private double vx;
     private double vy;
     private String enemyType;
-    private double vx;
-    private double vy;
 
     public EnemyDTO() { super(); }
 

@@ -22,7 +22,9 @@ public class Player extends GameObject implements EntityA, Shooter {
     private double velX = 0;
     private double velY = 0;
 
+    @SuppressWarnings("unused")
     private int max_health, current_health, hp_regen, points;
+    @SuppressWarnings("unused")
     private double damage, speed, fire_rate, shield_duration;
 
     // hit flash effect
