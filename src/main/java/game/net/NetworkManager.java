@@ -4,14 +4,17 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import game.core.Game;
+import game.entities.Bullet;
 import game.entities.Player;
 import game.entities.interfaces.EntityA;
 import game.entities.interfaces.EntityB;
 import game.graphics.Textures;
+import game.net.dto.BulletDTO;
 import game.net.dto.EnemyDTO;
 import game.net.dto.GameStateMessage;
 import game.net.dto.PlayerDTO;
@@ -27,6 +30,8 @@ public class NetworkManager {
     private final Map<String, Double> lastEnemyX = new HashMap<>();
     private final Map<String, Double> lastEnemyY = new HashMap<>();
     private final Map<String, Long> lastEnemyTime = new HashMap<>();
+    private final LinkedList<BulletDTO> bulletCache = new LinkedList<>();
+    private final Map<String, Bullet> remoteBullets = new HashMap<>();  // Track remote bullets on host
     private static final boolean DEBUG = false;
 
     public NetworkManager(Game game) {
@@ -85,13 +90,26 @@ public class NetworkManager {
             return;
         }
 
-        // Send local player state
+        // Send local player state with bullets
         Player localPlayer = game.getPlayer();
+        
+        // Collect bullets as DTOs
+        List<BulletDTO> bulletDTOs = new ArrayList<>();
+        for (EntityA bullet : game.ea) {
+            String bulletId = String.valueOf(System.identityHashCode(bullet));
+            bulletDTOs.add(new BulletDTO(bulletId, bullet.getX(), bullet.getY(), bullet.getIsFriendly()));
+        }
+        
+        if (DEBUG && bulletDTOs.size() > 0) {
+            System.out.println("NetworkManager.tick: Sending " + bulletDTOs.size() + " bullets");
+        }
+        
         client.sendPlayerUpdate(
                 localPlayer.getX(),
                 localPlayer.getY(),
                 localPlayer.getCurrent_health(),
-                localPlayer.getPoints()
+                localPlayer.getPoints(),
+                bulletDTOs
         );
 
         // Player 1 (host) sends enemy updates
@@ -251,6 +269,46 @@ public class NetworkManager {
                     remotePlayer.setTargetFromServer(remoteDto.getX(), remoteDto.getY(), now);
                     remotePlayer.setHealth(remoteDto.getHealth());
                     remotePlayer.setPoints(remoteDto.getPoints());
+                    
+                    // Populate remote player's bullets
+                    // On HOST: Add remote player's (client's) bullets to game.ea for collision detection
+                    // On CLIENT: Add remote player's (host's) bullets to game.ea for collision detection
+                    if (remoteDto.getBullets() != null) {
+                        if (DEBUG) System.out.println("NetworkManager: Received " + remoteDto.getBullets().size() + " bullets from remote player");
+                        
+                        // Both host and client: Track and manage remote player's bullets in collision system
+                        List<String> currentBulletIds = new ArrayList<>();
+                        for (BulletDTO bulletDto : remoteDto.getBullets()) {
+                            currentBulletIds.add(bulletDto.getId());
+                            
+                            Bullet remoteBullet = remoteBullets.get(bulletDto.getId());
+                            if (remoteBullet == null) {
+                                // New bullet - create it
+                                remoteBullet = new Bullet(bulletDto.getX(), bulletDto.getY(), new Textures(game), game, true);
+                                remoteBullets.put(bulletDto.getId(), remoteBullet);
+                                game.ea.add(remoteBullet);
+                                if (DEBUG) System.out.println("NetworkManager: Added remote bullet id=" + bulletDto.getId() + " at (" + bulletDto.getX() + "," + bulletDto.getY() + ")");
+                            } else {
+                                // Update existing bullet position
+                                remoteBullet.setX(bulletDto.getX());
+                                remoteBullet.setY(bulletDto.getY());
+                            }
+                        }
+                        
+                        // Remove bullets that are no longer in remote list
+                        List<String> toRemove = new ArrayList<>();
+                        for (String bulletId : remoteBullets.keySet()) {
+                            if (!currentBulletIds.contains(bulletId)) {
+                                Bullet bulletToRemove = remoteBullets.get(bulletId);
+                                game.ea.remove(bulletToRemove);
+                                toRemove.add(bulletId);
+                                if (DEBUG) System.out.println("NetworkManager: Removed remote bullet id=" + bulletId);
+                            }
+                        }
+                        toRemove.forEach(remoteBullets::remove);
+                    } else {
+                        if (DEBUG) System.out.println("NetworkManager: Remote player bullets are NULL");
+                    }
                 }
             } else {
                 if (DEBUG) System.out.println("NetworkManager: applying authoritative local player state: x=" + remoteDto.getX() + " y=" + remoteDto.getY() + " health=" + remoteDto.getHealth());
