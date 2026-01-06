@@ -9,21 +9,22 @@ import java.util.Map;
 import game.core.Game;
 import game.entities.Player;
 import game.entities.interfaces.EntityB;
+import game.graphics.Textures;
 import game.net.dto.EnemyDTO;
 import game.net.dto.GameStateMessage;
 import game.net.dto.PlayerDTO;
 
 public class NetworkManager {
     private GameClient client;
-    private Game game;
+    private final Game game;
     private RemotePlayer remotePlayer;
     private boolean multiplayerMode;
     private boolean isHosting;
     private String serverIp;
-    private Map<String, RemoteEnemy> remoteEnemies = new HashMap<>();
-    private Map<String, Double> lastEnemyX = new HashMap<>();
-    private Map<String, Double> lastEnemyY = new HashMap<>();
-    private Map<String, Long> lastEnemyTime = new HashMap<>();
+    private final Map<String, RemoteEnemy> remoteEnemies = new HashMap<>();
+    private final Map<String, Double> lastEnemyX = new HashMap<>();
+    private final Map<String, Double> lastEnemyY = new HashMap<>();
+    private final Map<String, Long> lastEnemyTime = new HashMap<>();
     private static final boolean DEBUG = false; // set true to enable verbose networking logs
 
     public NetworkManager(Game game) {
@@ -115,9 +116,6 @@ public class NetworkManager {
         }
     }
 
-<<<<<<< Updated upstream
-    private void updateFromState(GameStateMessage.GameStateDTO state) {
-=======
     // Called once per game tick to smooth/interpolate remote entities
     public void update(double deltaTime) {
         if (remotePlayer != null) remotePlayer.update(deltaTime);
@@ -133,7 +131,6 @@ public class NetworkManager {
             System.out.println("NetworkManager.updateFromState: myPlayerId=" + client.getMyPlayerId() + ", hasPlayer1=" + (state.getPlayer1() != null) + ", hasPlayer2=" + (state.getPlayer2() != null) + ", ts=" + now);
         }
 
->>>>>>> Stashed changes
         // Update remote player
         PlayerDTO remoteDto = null;
         if (client.getMyPlayerId() == 1 && state.getPlayer2() != null) {
@@ -143,20 +140,6 @@ public class NetworkManager {
         }
 
         if (remoteDto != null) {
-<<<<<<< Updated upstream
-            if (remotePlayer == null) {
-                remotePlayer = new RemotePlayer(remoteDto.getX(), remoteDto.getY(), remoteDto.getId());
-            }
-            remotePlayer.setX(remoteDto.getX());
-            remotePlayer.setY(remoteDto.getY());
-            remotePlayer.setHealth(remoteDto.getHealth());
-            remotePlayer.setPoints(remoteDto.getPoints());
-        }
-
-        // Update remote enemies from server
-        if (state.getEnemies() != null) {
-            updateRemoteEnemies(state.getEnemies());
-=======
             if (DEBUG) System.out.println("NetworkManager: received remote player DTO -> id=" + remoteDto.getId() + ", x=" + remoteDto.getX() + ", y=" + remoteDto.getY());
 
             // If this DTO represents the OTHER player, update/create RemotePlayer
@@ -189,7 +172,6 @@ public class NetworkManager {
                     local.setY(remoteDto.getY());
                 }
             }
->>>>>>> Stashed changes
         }
 
         // Always update remote enemies even if there's no remote player DTO
@@ -201,7 +183,7 @@ public class NetworkManager {
         for (EnemyDTO enemyDto : enemies) {
             RemoteEnemy remoteEnemy = remoteEnemies.get(enemyDto.getId());
             if (remoteEnemy == null) {
-                remoteEnemy = new RemoteEnemy(enemyDto.getId(), enemyDto.getX(), enemyDto.getY(), enemyDto.getEnemyType());
+                remoteEnemy = new RemoteEnemy(enemyDto.getId(), enemyDto.getX(), enemyDto.getY(), enemyDto.getEnemyType(), new Textures(game));
                 remoteEnemies.put(enemyDto.getId(), remoteEnemy);
                 if (DEBUG) System.out.println("NetworkManager: created RemoteEnemy id=" + enemyDto.getId() + " type=" + enemyDto.getEnemyType());
             }
@@ -212,11 +194,6 @@ public class NetworkManager {
                 remoteEnemy.setTargetFromServer(enemyDto.getX(), enemyDto.getY(), serverRecvTimeMs);
                 if (DEBUG) System.out.println("NetworkManager: enemy id=" + enemyDto.getId() + " computed_vx=" + remoteEnemy.getVx() + " vy=" + remoteEnemy.getVy());
             }
-<<<<<<< Updated upstream
-            remoteEnemy.setX(enemyDto.getX());
-            remoteEnemy.setY(enemyDto.getY());
-=======
->>>>>>> Stashed changes
         }
 
         // Remove enemies that no longer exist on server

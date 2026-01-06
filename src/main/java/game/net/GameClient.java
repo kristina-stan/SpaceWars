@@ -1,13 +1,20 @@
 package game.net;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import game.net.dto.*;
-
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import game.net.dto.ConnectionMessage;
+import game.net.dto.EnemyDTO;
+import game.net.dto.EnemyUpdateMessage;
+import game.net.dto.GameStateMessage;
+import game.net.dto.PlayerUpdateMessage;
 
 public class GameClient {
     private Socket socket;
@@ -65,12 +72,9 @@ public class GameClient {
                 input.readFully(data);
                 String json = new String(data);
 
-<<<<<<< Updated upstream
-=======
                 // Debug: show raw incoming JSON (optional)
                 if (DEBUG) System.out.println("RAW RECEIVED: " + json);
 
->>>>>>> Stashed changes
                 handleMessage(json);
 
             } catch (IOException e) {
@@ -101,9 +105,6 @@ public class GameClient {
 
             case "state_update":
                 GameStateMessage stateMsg = gson.fromJson(json, GameStateMessage.class);
-<<<<<<< Updated upstream
-                stateQueue.offer(stateMsg.getState());
-=======
                 GameStateMessage.GameStateDTO s = stateMsg.getState();
                 int enemyCount = s.getEnemies() != null ? s.getEnemies().size() : 0;
                 long serverTs = obj.has("timestamp") ? obj.get("timestamp").getAsLong() : -1L;
@@ -111,7 +112,6 @@ public class GameClient {
                 if (DEBUG) System.out.println("Received state_update: enemies=" + enemyCount + ", p1=" + (s.getPlayer1() != null) + ", p2=" + (s.getPlayer2() != null) + ", serverTs=" + serverTs + ", recvTs=" + recvTs);
                 // Use client receive time for timing (avoids clock skew issues)
                 stateQueue.offer(new StateWithTimestamp(s, recvTs));
->>>>>>> Stashed changes
                 break;
 
             case "player_disconnected":

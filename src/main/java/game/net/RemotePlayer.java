@@ -1,13 +1,13 @@
 
 package game.net;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
 
 public class RemotePlayer {
     private double x;
     private double y;
-<<<<<<< Updated upstream
-=======
     private double targetX;
     private double targetY;
     private double lastServerX;
@@ -16,22 +16,15 @@ public class RemotePlayer {
     private double vx;
     private double vy;
     private final double extrapolationSeconds = 0.18; // predict 180ms ahead
->>>>>>> Stashed changes
     private int health;
     private int points;
-    private int playerId;
-    private static final int WIDTH = 32;
-    private static final int HEIGHT = 32;
-<<<<<<< Updated upstream
-=======
+    private final int playerId;
     private final double smoothing = 18.0; // higher = snappier
->>>>>>> Stashed changes
+    private long lastUpdateTime = 0;
 
     public RemotePlayer(double x, double y, int playerId) {
         this.x = x;
         this.y = y;
-<<<<<<< Updated upstream
-=======
         this.targetX = x;
         this.targetY = y;
         this.lastServerX = x;
@@ -39,14 +32,12 @@ public class RemotePlayer {
         this.lastServerTime = 0;
         this.vx = 0;
         this.vy = 0;
->>>>>>> Stashed changes
         this.health = 100;
         this.points = 0;
         this.playerId = playerId;
+        this.lastUpdateTime = System.currentTimeMillis();
     }
 
-<<<<<<< Updated upstream
-=======
     // Call this every tick to smooth movement (deltaTime in seconds)
     public void update(double deltaTime) {
         double t = Math.min(1.0, smoothing * deltaTime);
@@ -76,6 +67,7 @@ public class RemotePlayer {
         this.lastServerX = tx;
         this.lastServerY = ty;
         this.lastServerTime = serverRecvTimeMs;
+        this.lastUpdateTime = System.currentTimeMillis();
     }
 
     public double getVx() { return vx; }
@@ -83,7 +75,6 @@ public class RemotePlayer {
     public double getTargetX() { return targetX; }
     public double getTargetY() { return targetY; }
 
->>>>>>> Stashed changes
     public void render(Graphics2D g) {
         // Draw remote player ship (different color from local player)
         g.setColor(new Color(0, 200, 255)); // Cyan/Blue
@@ -135,4 +126,6 @@ public class RemotePlayer {
 
     public int getPoints() { return points; }
     public void setPoints(int points) { this.points = points; }
+
+    public long getLastUpdateTime() { return lastUpdateTime; }
 }

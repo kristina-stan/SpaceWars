@@ -4,31 +4,32 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 
+import game.graphics.Animation;
+import game.graphics.Textures;
+
 public class RemoteEnemy {
-    private String id;
+    private final String id;
     private double x;
     private double y;
-    private String enemyType;
+    private double targetX;
+    private double targetY;
+    private final String enemyType;
     private static final int WIDTH = 32;
     private static final int HEIGHT = 32;
-<<<<<<< Updated upstream
-=======
     private final double smoothing = 12.0;
-    private Animation anim;
->>>>>>> Stashed changes
+    private final Animation anim;
 
-    public RemoteEnemy(String id, double x, double y, String enemyType) {
+    public RemoteEnemy(String id, double x, double y, String enemyType, Textures tex) {
         this.id = id;
         this.x = x;
         this.y = y;
         this.enemyType = enemyType;
-<<<<<<< Updated upstream
-=======
 
-        // Choose animation based on enemy type
-        if (enemyType != null && enemyType.toLowerCase().contains("grunt")) {
+        // Choose animation based on enemy type (handle both class names and type strings)
+        String typeUpper = enemyType != null ? enemyType.toUpperCase() : "";
+        if (typeUpper.contains("grunt")) {
             this.anim = new Animation(tex.bEnemy[0], tex.bEnemy[1]);
-        } else if (enemyType != null && enemyType.toLowerCase().contains("shooter")) {
+        } else if (typeUpper.contains("shooter")) {
             this.anim = new Animation(tex.yEnemy[0]);
         } else {
             // default
@@ -53,7 +54,6 @@ public class RemoteEnemy {
     public void setTarget(double tx, double ty) {
         this.targetX = tx;
         this.targetY = ty;
->>>>>>> Stashed changes
     }
 
     public void setTargetFromServer(double tx, double ty, long serverRecvTimeMs) {
