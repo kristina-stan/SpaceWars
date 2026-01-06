@@ -7,14 +7,24 @@ public class EnemyDTO {
     private double vx;
     private double vy;
     private String enemyType;
+    private double vx;
+    private double vy;
 
-    public EnemyDTO(String id, double x, double y, double vx, double vy, String enemyType) {
+    public EnemyDTO() { super(); }
+
+    public EnemyDTO(String id, double x, double y, String enemyType) {
+        this(id, x, y, enemyType, 0.0, 0.0);
+    }
+
+    public EnemyDTO(String id, double x, double y, String enemyType, double vx, double vy) {
         this.id = id;
         this.x = x;
         this.y = y;
         this.vx = vx;
         this.vy = vy;
         this.enemyType = enemyType;
+        this.vx = vx;
+        this.vy = vy;
     }
 
     public String getId() { return id; }

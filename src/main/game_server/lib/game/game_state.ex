@@ -96,11 +96,17 @@ defmodule SpaceGame.GameState do
 
   @impl true
   def handle_cast({:update_player, player_id, data}, state) do
+    # Convert string keys to atoms if needed
+    normalized_data = Enum.reduce(data, %{}, fn {k, v}, acc ->
+      atom_key = if is_binary(k), do: String.to_atom(k), else: k
+      Map.put(acc, atom_key, v)
+    end)
+
     new_state = case player_id do
       1 when state.player1 != nil ->
-        %{state | player1: Map.merge(state.player1, data)}
+        %{state | player1: Map.merge(state.player1, normalized_data)}
       2 when state.player2 != nil ->
-        %{state | player2: Map.merge(state.player2, data)}
+        %{state | player2: Map.merge(state.player2, normalized_data)}
       _ -> state
     end
     {:noreply, new_state}

@@ -194,7 +194,6 @@ public class Game extends Canvas implements Runnable {
             // Add network updates
             if (networkManager != null) {
                 networkManager.tick();
-                // Update remote entities smoothing
                 networkManager.update(deltaTime);
             }
 

@@ -70,18 +70,37 @@ defmodule SpaceGame.ClientHandler do
 
   @impl true
   def handle_info({:state_update, game_state}, state) do
-    # Convert player structs to simple maps without PIDs to avoid Jason encoding errors
-    player_to_dto = fn
-      nil -> nil
-      p -> %{id: p.id, x: p.x, y: p.y, vx: Map.get(p, :vx, 0), vy: Map.get(p, :vy, 0), health: p.health, points: Map.get(p, :points, 0)}
+    player_to_dto = fn player ->
+      if player do
+        %{
+          id: player.id,
+          x: player.x,
+          y: player.y,
+          health: player.health,
+          points: Map.get(player, :points, 0)
+        }
+      else
+        nil
+      end
     end
 
     message = %{
       type: "state_update",
+      timestamp: System.system_time(:millisecond),
       state: %{
         player1: player_to_dto.(game_state.player1),
         player2: player_to_dto.(game_state.player2),
-        enemies: Enum.map(game_state.enemies || [], fn e -> e end)
+        enemies: Enum.map(game_state.enemies || [], fn e ->
+          # Ensure enemy entries include vx/vy keys (defaults to 0) and proper keys for the client
+          %{
+            id: e["id"],
+            x: e["x"],
+            y: e["y"],
+            enemyType: e["enemyType"],
+            vx: Map.get(e, "vx", 0),
+            vy: Map.get(e, "vy", 0)
+          }
+        end)
       }
     }
 
@@ -102,7 +121,7 @@ defmodule SpaceGame.ClientHandler do
     SpaceGame.GameState.broadcast_state()
   end
 
-  defp handle_message(%{"type" => "enemy_update"} = msg, state) do
+  defp handle_message(%{"type" => "enemy_update"} = msg, _state) do
     SpaceGame.GameState.update_enemies(msg["enemies"])
     SpaceGame.GameState.broadcast_state()
   end
@@ -112,6 +131,6 @@ defmodule SpaceGame.ClientHandler do
   end
 
   defp handle_message(msg, _state) do
-    Logger.warn("Unknown message type: #{inspect(msg)}")
+    Logger.warning("Unknown message type: #{inspect(msg)}")
   end
 end

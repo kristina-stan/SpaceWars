@@ -24,8 +24,18 @@ public class GameClient {
     private int myPlayerId;
     private boolean connected;
     private Thread receiveThread;
-    private BlockingQueue<GameStateMessage.GameStateDTO> stateQueue;
+    private BlockingQueue<StateWithTimestamp> stateQueue;
     private boolean gameStarted;
+    private static final boolean DEBUG = false; // toggle verbose logging for debugging
+
+    public static class StateWithTimestamp {
+        public GameStateMessage.GameStateDTO state;
+        public long timestamp;
+        public StateWithTimestamp(GameStateMessage.GameStateDTO state, long timestamp) {
+            this.state = state;
+            this.timestamp = timestamp;
+        }
+    }
 
     public GameClient(String host, int port) {
         this.gson = new Gson();
@@ -62,8 +72,8 @@ public class GameClient {
                 input.readFully(data);
                 String json = new String(data);
 
-                // Debug: show raw incoming JSON
-                System.out.println("RAW RECEIVED: " + json);
+                // Debug: show raw incoming JSON (optional)
+                if (DEBUG) System.out.println("RAW RECEIVED: " + json);
 
                 handleMessage(json);
 
@@ -96,7 +106,13 @@ public class GameClient {
 
             case "state_update":
                 GameStateMessage stateMsg = gson.fromJson(json, GameStateMessage.class);
-                stateQueue.offer(stateMsg.getState());
+                GameStateMessage.GameStateDTO s = stateMsg.getState();
+                int enemyCount = s.getEnemies() != null ? s.getEnemies().size() : 0;
+                long serverTs = obj.has("timestamp") ? obj.get("timestamp").getAsLong() : -1L;
+                long recvTs = System.currentTimeMillis();
+                if (DEBUG) System.out.println("Received state_update: enemies=" + enemyCount + ", p1=" + (s.getPlayer1() != null) + ", p2=" + (s.getPlayer2() != null) + ", serverTs=" + serverTs + ", recvTs=" + recvTs);
+                // Use client receive time for timing (avoids clock skew issues)
+                stateQueue.offer(new StateWithTimestamp(s, recvTs));
                 break;
 
             case "player_disconnected":
@@ -144,8 +160,14 @@ public class GameClient {
         }
     }
 
-    public GameStateMessage.GameStateDTO getLatestState() {
-        return stateQueue.poll();
+    public StateWithTimestamp getLatestState() {
+        // Drain queue and return the latest state to avoid processing stale updates
+        StateWithTimestamp latest = null;
+        StateWithTimestamp s;
+        while ((s = stateQueue.poll()) != null) {
+            latest = s;
+        }
+        return latest;
     }
 
     public int getMyPlayerId() {

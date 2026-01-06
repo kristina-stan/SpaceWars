@@ -9,21 +9,23 @@ import java.util.Map;
 import game.core.Game;
 import game.entities.Player;
 import game.entities.interfaces.EntityB;
+import game.graphics.Textures;
 import game.net.dto.EnemyDTO;
 import game.net.dto.GameStateMessage;
 import game.net.dto.PlayerDTO;
 
 public class NetworkManager {
     private GameClient client;
-    private Game game;
+    private final Game game;
     private RemotePlayer remotePlayer;
     private boolean multiplayerMode;
     private boolean isHosting;
     private String serverIp;
-    private Map<String, RemoteEnemy> remoteEnemies = new HashMap<>();
-    // Track previous enemy samples to compute velocities when hosting
-    private static class EnemySample { double x; double y; long timeMs; EnemySample(double x, double y, long t){this.x=x;this.y=y;this.timeMs=t;} }
-    private Map<String, EnemySample> prevEnemySamples = new HashMap<>();
+    private final Map<String, RemoteEnemy> remoteEnemies = new HashMap<>();
+    private final Map<String, Double> lastEnemyX = new HashMap<>();
+    private final Map<String, Double> lastEnemyY = new HashMap<>();
+    private final Map<String, Long> lastEnemyTime = new HashMap<>();
+    private static final boolean DEBUG = false; // set true to enable verbose networking logs
 
     public NetworkManager(Game game) {
         this.game = game;
@@ -90,44 +92,46 @@ public class NetworkManager {
         // Player 1 (host) sends enemy updates
         if (client.getMyPlayerId() == 1) {
             List<EnemyDTO> enemyDTOs = new ArrayList<>();
-            long nowEnemies = System.currentTimeMillis();
+            long nowMs = System.currentTimeMillis();
             for (EntityB enemy : game.eb) {
                 String id = String.valueOf(System.identityHashCode(enemy));
                 double x = enemy.getX();
                 double y = enemy.getY();
 
-                // compute velocity since last sample
-                double evx = 0.0;
-                double evy = 0.0;
-                EnemySample sample = prevEnemySamples.get(id);
-                if (sample != null) {
-                    double dt = (nowEnemies - sample.timeMs) / 1000.0;
-                    if (dt > 0) {
-                        evx = (x - sample.x) / dt;
-                        evy = (y - sample.y) / dt;
-                    }
-                    // update sample
-                    sample.x = x; sample.y = y; sample.timeMs = nowEnemies;
-                } else {
-                    prevEnemySamples.put(id, new EnemySample(x, y, nowEnemies));
+                double vx = 0.0;
+                double vy = 0.0;
+                if (lastEnemyX.containsKey(id) && lastEnemyY.containsKey(id) && lastEnemyTime.containsKey(id)) {
+                    double lastX = lastEnemyX.get(id);
+                    double lastY = lastEnemyY.get(id);
+                    long lastT = lastEnemyTime.get(id);
+                    long dtMs = nowMs - lastT;
+                    if (dtMs < 20) dtMs = 20; // avoid tiny dt
+                    double dt = dtMs / 1000.0;
+                    vx = (x - lastX) / dt;
+                    vy = (y - lastY) / dt;
                 }
+
+                // Save for next tick
+                lastEnemyX.put(id, x);
+                lastEnemyY.put(id, y);
+                lastEnemyTime.put(id, nowMs);
 
                 enemyDTOs.add(new EnemyDTO(
                         id,
                         x,
                         y,
-                        evx,
-                        evy,
-                        enemy.getClass().getSimpleName()
+                        enemy.getClass().getSimpleName(),
+                        vx,
+                        vy
                 ));
             }
             client.sendEnemyUpdate(enemyDTOs);
         }
 
         // Receive and apply game state
-        GameStateMessage.GameStateDTO state = client.getLatestState();
-        if (state != null) {
-            updateFromState(state);
+        GameClient.StateWithTimestamp srt = client.getLatestState();
+        if (srt != null) {
+            updateFromState(srt.state, srt.timestamp);
         }
     }
 
@@ -139,10 +143,11 @@ public class NetworkManager {
         }
     }
 
-    private void updateFromState(GameStateMessage.GameStateDTO state) {
+    private void updateFromState(GameStateMessage.GameStateDTO state, long timestampMs) {
+        long now = timestampMs > 0 ? timestampMs : System.currentTimeMillis();
         // Debug: show who we think we are and what arrived
-        if (client != null) {
-            System.out.println("NetworkManager.updateFromState: myPlayerId=" + client.getMyPlayerId() + ", hasPlayer1=" + (state.getPlayer1() != null) + ", hasPlayer2=" + (state.getPlayer2() != null));
+        if (client != null && DEBUG) {
+            System.out.println("NetworkManager.updateFromState: myPlayerId=" + client.getMyPlayerId() + ", hasPlayer1=" + (state.getPlayer1() != null) + ", hasPlayer2=" + (state.getPlayer2() != null) + ", ts=" + now);
         }
 
         // Update remote player
@@ -154,43 +159,60 @@ public class NetworkManager {
         }
 
         if (remoteDto != null) {
-            System.out.println("NetworkManager: received remote player DTO -> id=" + remoteDto.getId() + ", x=" + remoteDto.getX() + ", y=" + remoteDto.getY() + ", vx=" + remoteDto.getVx() + ", vy=" + remoteDto.getVy());
-            if (remotePlayer == null) {
-                System.out.println("NetworkManager: creating RemotePlayer for id=" + remoteDto.getId());
-                remotePlayer = new RemotePlayer(remoteDto.getX(), remoteDto.getY(), remoteDto.getId());
-            } else {
-                // Debug update
-                System.out.println("NetworkManager: updating RemotePlayer target to x=" + remoteDto.getX() + " y=" + remoteDto.getY());
-            }
-            // apply small lead based on reported velocity to reduce visible lag
-            double leadSeconds = 0.06; // 60ms lead
-            remotePlayer.setTarget(remoteDto.getX() + remoteDto.getVx() * leadSeconds, remoteDto.getY() + remoteDto.getVy() * leadSeconds);
-            remotePlayer.setVelocity(remoteDto.getVx(), remoteDto.getVy());
-            remotePlayer.setHealth(remoteDto.getHealth());
-            remotePlayer.setPoints(remoteDto.getPoints());
-            if (state.getEnemies() != null) {
-                updateRemoteEnemies(state.getEnemies());
-            }
+            if (DEBUG) System.out.println("NetworkManager: received remote player DTO -> id=" + remoteDto.getId() + ", x=" + remoteDto.getX() + ", y=" + remoteDto.getY());
 
+            // If this DTO represents the OTHER player, update/create RemotePlayer
+            if (remoteDto.getId() != client.getMyPlayerId()) {
+                if (remotePlayer == null) {
+                    // Create and register a RemotePlayer instance for this remote id
+                    remotePlayer = new RemotePlayer(remoteDto.getX(), remoteDto.getY(), (int) remoteDto.getId());
+                    if (DEBUG) System.out.println("NetworkManager: created RemotePlayer id=" + remoteDto.getId());
+                } else {
+                    // Debug update
+                    if (DEBUG) System.out.println("NetworkManager: updating RemotePlayer target to x=" + remoteDto.getX() + " y=" + remoteDto.getY());
+                }
+                // Smoothly interpolate toward predicted target (extrapolated)
+                if (remotePlayer != null) {
+                    remotePlayer.setTargetFromServer(remoteDto.getX(), remoteDto.getY(), now);
+                    remotePlayer.setHealth(remoteDto.getHealth());
+                    remotePlayer.setPoints(remoteDto.getPoints());
+                }
+
+            } else {
+                // This DTO is for *us* (authoritative server state). Apply health/position from server.
+                if (DEBUG) System.out.println("NetworkManager: applying authoritative local player state: x=" + remoteDto.getX() + " y=" + remoteDto.getY() + " health=" + remoteDto.getHealth());
+                Player local = game.getPlayer();
+                if (local != null) {
+                    // Apply health immediately
+                    local.setCurrent_health(remoteDto.getHealth());
+                    local.setPoints(remoteDto.getPoints());
+                    // Smoothly correct position to server (small snap reduction)
+                    local.setX(remoteDto.getX());
+                    local.setY(remoteDto.getY());
+                }
+            }
         }
+
+        // Always update remote enemies even if there's no remote player DTO
+        updateRemoteEnemies(state.getEnemies() != null ? state.getEnemies() : java.util.Collections.emptyList(), now);
     }
 
-    private void updateRemoteEnemies(List<EnemyDTO> enemies) {
-        if (enemies == null) return;
+    private void updateRemoteEnemies(List<EnemyDTO> enemies, long serverRecvTimeMs) {
         // Update existing and add new remote enemies
         for (EnemyDTO enemyDto : enemies) {
             RemoteEnemy remoteEnemy = remoteEnemies.get(enemyDto.getId());
             if (remoteEnemy == null) {
-                remoteEnemy = new RemoteEnemy(enemyDto.getId(), enemyDto.getX(), enemyDto.getY(), enemyDto.getEnemyType(), game.getTextures());
+                remoteEnemy = new RemoteEnemy(enemyDto.getId(), enemyDto.getX(), enemyDto.getY(), enemyDto.getEnemyType(), new Textures(game));
                 remoteEnemies.put(enemyDto.getId(), remoteEnemy);
+                if (DEBUG) System.out.println("NetworkManager: created RemoteEnemy id=" + enemyDto.getId() + " type=" + enemyDto.getEnemyType());
             }
-            // apply small lead based on reported velocity to reduce visible lag
-            double leadSeconds = 0.06; // 60ms lead
-            double leadX = enemyDto.getX() + enemyDto.getVx() * leadSeconds;
-            double leadY = enemyDto.getY() + enemyDto.getVy() * leadSeconds;
-            remoteEnemy.setTarget(leadX, leadY);
-            remoteEnemy.setVelocity(enemyDto.getVx(), enemyDto.getVy());
-            System.out.println("NetworkManager: remoteEnemy updated id=" + enemyDto.getId() + " target=("+leadX+","+leadY+") vx=" + enemyDto.getVx() + " vy=" + enemyDto.getVy());
+            if (enemyDto.getVx() != 0.0 || enemyDto.getVy() != 0.0) {
+                remoteEnemy.setTargetFromServer(enemyDto.getX(), enemyDto.getY(), enemyDto.getVx(), enemyDto.getVy(), serverRecvTimeMs);
+                if (DEBUG) System.out.println("NetworkManager: enemy id=" + enemyDto.getId() + " dto_vx=" + enemyDto.getVx() + " dto_vy=" + enemyDto.getVy() + " applied_vx=" + remoteEnemy.getVx() + " vy=" + remoteEnemy.getVy());
+            } else {
+                remoteEnemy.setTargetFromServer(enemyDto.getX(), enemyDto.getY(), serverRecvTimeMs);
+                if (DEBUG) System.out.println("NetworkManager: enemy id=" + enemyDto.getId() + " computed_vx=" + remoteEnemy.getVx() + " vy=" + remoteEnemy.getVy());
+            }
         }
 
         // Remove enemies that no longer exist on server

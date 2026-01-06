@@ -4,22 +4,20 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 
-import game.graphics.Textures;
 import game.graphics.Animation;
+import game.graphics.Textures;
 
 public class RemoteEnemy {
-    private String id;
+    private final String id;
     private double x;
     private double y;
     private double targetX;
     private double targetY;
-    private String enemyType;
+    private final String enemyType;
     private static final int WIDTH = 32;
     private static final int HEIGHT = 32;
-    private final double smoothing = 40.0;
-    private Animation anim;
-    private double vx = 0.0;
-    private double vy = 0.0;
+    private final double smoothing = 12.0;
+    private final Animation anim;
 
     public RemoteEnemy(String id, double x, double y, String enemyType, Textures tex) {
         this.id = id;
@@ -29,10 +27,11 @@ public class RemoteEnemy {
         this.targetY = y;
         this.enemyType = enemyType;
 
-        // Choose animation based on enemy type
-        if (enemyType != null && enemyType.toLowerCase().contains("grunt")) {
+        // Choose animation based on enemy type (handle both class names and type strings)
+        String typeUpper = enemyType != null ? enemyType.toUpperCase() : "";
+        if (typeUpper.contains("grunt")) {
             this.anim = new Animation(tex.bEnemy[0], tex.bEnemy[1]);
-        } else if (enemyType != null && enemyType.toLowerCase().contains("shooter")) {
+        } else if (typeUpper.contains("shooter")) {
             this.anim = new Animation(tex.yEnemy[0]);
         } else {
             // default
@@ -40,15 +39,17 @@ public class RemoteEnemy {
         }
     }
 
+    private double lastServerX;
+    private double lastServerY;
+    private long lastServerTime;
+    private double vx;
+    private double vy;
+    private final double extrapolationSeconds = 0.1; // predict 100ms ahead
+
     public void update(double deltaTime) {
         double t = Math.min(1.0, smoothing * deltaTime);
-        // Interpolate towards target position
         this.x += (targetX - this.x) * t;
         this.y += (targetY - this.y) * t;
-        // Small extrapolation based on reported velocity to hide packet delay
-        double extrapolationFactor = 0.5; // adjust to taste
-        this.x += vx * deltaTime * extrapolationFactor;
-        this.y += vy * deltaTime * extrapolationFactor;
         if (anim != null) anim.runAnimation();
     }
 
@@ -57,10 +58,44 @@ public class RemoteEnemy {
         this.targetY = ty;
     }
 
-    public void setVelocity(double vx, double vy) {
-        this.vx = vx;
-        this.vy = vy;
+    public void setTargetFromServer(double tx, double ty, long serverRecvTimeMs) {
+        // Deprecated path: compute velocity from previous sample
+        if (lastServerTime > 0) {
+            long dtMs = serverRecvTimeMs - lastServerTime;
+            // Avoid tiny dt causing huge velocities
+            if (dtMs < 20) dtMs = 20;
+            double dt = dtMs / 1000.0;
+            this.vx = (tx - lastServerX) / dt;
+            this.vy = (ty - lastServerY) / dt;
+        } else {
+            this.vx = 0;
+            this.vy = 0;
+        }
+        applyVelocityAndTarget(tx, ty, serverRecvTimeMs);
     }
+
+    // New: accept authoritative vx/vy from server if available
+    public void setTargetFromServer(double tx, double ty, double svx, double svy, long serverRecvTimeMs) {
+        this.vx = svx;
+        this.vy = svy;
+        applyVelocityAndTarget(tx, ty, serverRecvTimeMs);
+    }
+
+    private void applyVelocityAndTarget(double tx, double ty, long serverRecvTimeMs) {
+        // Cap velocities to reasonable ranges to avoid wild extrapolation
+        double maxV = 1000.0; // pixels per second
+        this.vx = Math.max(-maxV, Math.min(maxV, this.vx));
+        this.vy = Math.max(-maxV, Math.min(maxV, this.vy));
+
+        this.targetX = tx + vx * extrapolationSeconds;
+        this.targetY = ty + vy * extrapolationSeconds;
+        this.lastServerX = tx;
+        this.lastServerY = ty;
+        this.lastServerTime = serverRecvTimeMs;
+    }
+
+    public double getVx() { return vx; }
+    public double getVy() { return vy; }
 
     public void render(Graphics2D g) {
         if (anim != null) {

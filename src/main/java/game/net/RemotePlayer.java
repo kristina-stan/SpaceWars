@@ -1,30 +1,41 @@
 
 package game.net;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
 
 public class RemotePlayer {
     private double x;
     private double y;
     private double targetX;
     private double targetY;
+    private double lastServerX;
+    private double lastServerY;
+    private long lastServerTime;
+    private double vx;
+    private double vy;
+    private final double extrapolationSeconds = 0.18; // predict 180ms ahead
     private int health;
     private int points;
-    private int playerId;
-    private static final int WIDTH = 32;
-    private static final int HEIGHT = 32;
-    private final double smoothing = 40.0; // higher = snappier
-    private double vx = 0.0;
-    private double vy = 0.0;
+    private final int playerId;
+    private final double smoothing = 18.0; // higher = snappier
+    private long lastUpdateTime = 0;
 
     public RemotePlayer(double x, double y, int playerId) {
         this.x = x;
         this.y = y;
         this.targetX = x;
         this.targetY = y;
+        this.lastServerX = x;
+        this.lastServerY = y;
+        this.lastServerTime = 0;
+        this.vx = 0;
+        this.vy = 0;
         this.health = 100;
         this.points = 0;
         this.playerId = playerId;
+        this.lastUpdateTime = System.currentTimeMillis();
     }
 
     // Call this every tick to smooth movement (deltaTime in seconds)
@@ -32,21 +43,37 @@ public class RemotePlayer {
         double t = Math.min(1.0, smoothing * deltaTime);
         this.x += (targetX - this.x) * t;
         this.y += (targetY - this.y) * t;
-        // small extrapolation to smooth movement
-        double extrapolationFactor = 0.5;
-        this.x += vx * deltaTime * extrapolationFactor;
-        this.y += vy * deltaTime * extrapolationFactor;
     }
 
+    // Basic direct set (keeps existing behavior)
     public void setTarget(double tx, double ty) {
         this.targetX = tx;
         this.targetY = ty;
     }
 
-    public void setVelocity(double vx, double vy) {
-        this.vx = vx;
-        this.vy = vy;
+    // Use server-received position + compute velocity for simple extrapolation
+    public void setTargetFromServer(double tx, double ty, long serverRecvTimeMs) {
+        if (lastServerTime > 0) {
+            double dt = (serverRecvTimeMs - lastServerTime) / 1000.0;
+            if (dt > 0) {
+                this.vx = (tx - lastServerX) / dt;
+                this.vy = (ty - lastServerY) / dt;
+            }
+        }
+        // Predict slightly ahead to compensate for latency
+        this.targetX = tx + vx * extrapolationSeconds;
+        this.targetY = ty + vy * extrapolationSeconds;
+
+        this.lastServerX = tx;
+        this.lastServerY = ty;
+        this.lastServerTime = serverRecvTimeMs;
+        this.lastUpdateTime = System.currentTimeMillis();
     }
+
+    public double getVx() { return vx; }
+    public double getVy() { return vy; }
+    public double getTargetX() { return targetX; }
+    public double getTargetY() { return targetY; }
 
     public void render(Graphics2D g) {
         // Draw remote player ship (different color from local player)
@@ -99,4 +126,6 @@ public class RemotePlayer {
 
     public int getPoints() { return points; }
     public void setPoints(int points) { this.points = points; }
+
+    public long getLastUpdateTime() { return lastUpdateTime; }
 }

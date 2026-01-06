@@ -11,9 +11,9 @@ public final class Textures {
     public static BufferedImage[] player = new BufferedImage[6];// for staying on one place
     public static BufferedImage[] missle = new BufferedImage[2];
 
-    public BufferedImage[] gEnemy = new BufferedImage[2];
-    public BufferedImage[] bEnemy = new BufferedImage[2];
-    public BufferedImage[] yEnemy = new BufferedImage[2];
+    public static BufferedImage[] gEnemy = new BufferedImage[2];
+    public static BufferedImage[] bEnemy = new BufferedImage[2];
+    public static BufferedImage[] yEnemy = new BufferedImage[2];
 
     private SpriteSheet ss;
 
