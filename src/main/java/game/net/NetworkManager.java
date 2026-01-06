@@ -39,6 +39,28 @@ public class NetworkManager {
     public void connect(String host, int port) {
         client = new GameClient(host, port);
         multiplayerMode = true;
+        
+        // After a short delay, update player sprite if this is a client (player 2)
+        new Thread(() -> {
+            try {
+                Thread.sleep(500); // Wait for player ID assignment
+                if (client.getMyPlayerId() == 2) {
+                    // Recreate player with player2 sprite
+                    Player newPlayer = new Player(
+                        game.getPlayer().getX(),
+                        game.getPlayer().getY(),
+                        game.getPlayer().getTex(),
+                        game.getController(),
+                        game,
+                        game.getConfig(),
+                        true // usePlayer2 = true for client
+                    );
+                    game.setPlayer(newPlayer);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     public void setMultiplayerMode(boolean enabled) {
@@ -220,7 +242,7 @@ public class NetworkManager {
 
             if (remoteDto.getId() != client.getMyPlayerId()) {
                 if (remotePlayer == null) {
-                    remotePlayer = new RemotePlayer(remoteDto.getX(), remoteDto.getY(), (int) remoteDto.getId());
+                    remotePlayer = new RemotePlayer(remoteDto.getX(), remoteDto.getY(), (int) remoteDto.getId(), new Textures(game));
                     if (DEBUG) System.out.println("NetworkManager: created RemotePlayer id=" + remoteDto.getId());
                 } else {
                     if (DEBUG) System.out.println("NetworkManager: updating RemotePlayer target to x=" + remoteDto.getX() + " y=" + remoteDto.getY());

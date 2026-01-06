@@ -103,21 +103,12 @@ public class RemoteEnemy {
     public double getVy() { return vy; }
 
     public void render(Graphics2D g) {
-        // Draw enemy animation if available, otherwise draw simple square
-        if (anim != null && anim.getCurrentFrame() != null) {
-            g.drawImage(anim.getCurrentFrame(), (int)x - WIDTH/2, (int)y - HEIGHT/2, WIDTH, HEIGHT, null);
-        } else {
-            // Fallback: Draw enemy as a simple square
-            //g.setColor(new Color(255, 100, 100)); // Red for enemy
-            //g.fillRect((int)x - WIDTH/2, (int)y - HEIGHT/2, WIDTH, HEIGHT);
+        // Draw enemy animation using proper animation rendering (matches host side)
+        if (anim != null) {
+            anim.drawAnimation(g, x, y, WIDTH/2);
         }
 
-        // Add outline
-        //g.setColor(Color.WHITE);
-        //g.drawRect((int)x - WIDTH/2, (int)y - HEIGHT/2, WIDTH, HEIGHT);
-
         // Draw type indicator
-        //g.setColor(Color.YELLOW);
         g.setFont(new Font("Arial", Font.BOLD, 10));
         String label = enemyType.contains("Shooter") ? "S" : "G";
         g.drawString(label, (int)x - 5, (int)y + 5);

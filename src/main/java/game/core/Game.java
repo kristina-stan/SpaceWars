@@ -108,7 +108,8 @@ public class Game extends Canvas implements Runnable {
         //---------- INITIALISE OBJECTS ----------
         tex = new Textures(this);
         c = new Controller(tex, this);
-        p = new Player(VIRTUAL_WIDTH/2, 0, tex, c, this, config);
+        // Initially create player with default sprite (player 1)
+        p = new Player(VIRTUAL_WIDTH/2, 0, tex, c, this, config, false);
         menu = new Menu();
 
         //playerInputs = new PlayerInputs(p);
@@ -350,7 +351,8 @@ public class Game extends Canvas implements Runnable {
     }
 
     public void resetGame(){
-        p = new Player(400, 700, tex, c, this, config);
+        boolean usePlayer2Sprite = networkManager.isMultiplayerMode() && !networkManager.isHosting();
+        p = new Player(400, 700, tex, c, this, config, usePlayer2Sprite);
 
         c.getEntityA().clear();
         c.getEntityB().clear();
@@ -506,5 +508,13 @@ public class Game extends Canvas implements Runnable {
     }
     public Player getPlayer(){
         return this.p;
+    }
+
+    public void setPlayer(Player newPlayer) {
+        this.p = newPlayer;
+    }
+
+    public Controller getController() {
+        return c;
     }
 }
